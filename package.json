@@ -1,6 +1,6 @@
 {
   "name": "opentracker",
-  "version": "3.4.0",
+  "version": "1.0.0",
   "description": "Self-hosted web analytics with visitor activity, session replay and heatmaps.",
   "author": "Friedrich-M",
   "license": "MIT",

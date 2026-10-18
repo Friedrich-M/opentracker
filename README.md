@@ -156,7 +156,3 @@ Use synthetic data in tests, issues, screenshots and pull requests. Report vulne
 - [MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/), downloaded at build time under its own terms for location and network lookup.
 
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records these attributions and the dependency licence boundaries. None of the acknowledgements implies endorsement by the upstream projects.
-
-## License
-
-[MIT](LICENSE).
