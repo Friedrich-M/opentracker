@@ -131,7 +131,7 @@
     "tar": "^7.5.22",
     "tsx": "^4.23.13",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11",
+    "vitest": "^5.0.5",
     "zod-openapi": "^6.0.2"
   },
   "private": true,
