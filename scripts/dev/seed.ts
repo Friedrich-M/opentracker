@@ -1,0 +1,121 @@
+#!/usr/bin/env node
+/* eslint-disable no-console */
+
+/**
+ * Sample data generator
+ *
+ * Generates realistic analytics data for local development and testing.
+ * Creates two demo websites:
+ *   - Demo Blog: Low traffic (~100 sessions/month)
+ *   - Demo SaaS: Average traffic (~500 sessions/day)
+ *
+ * Usage:
+ *   pnpm db:seed              # Generate 30 days of data
+ *   pnpm db:seed --days 90    # Generate 90 days of data
+ *   pnpm db:seed --clear      # Clear existing demo data first
+ *   pnpm db:seed --verbose    # Show detailed progress
+ */
+
+import { type SeedConfig, seed } from './seed/index.js';
+
+function parseArgs(): SeedConfig {
+  const args = process.argv.slice(2);
+
+  const config: SeedConfig = {
+    days: 30,
+    clear: false,
+    verbose: false,
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    if (arg === '--days' && args[i + 1]) {
+      config.days = parseInt(args[i + 1], 10);
+      if (Number.isNaN(config.days) || config.days < 1) {
+        console.error('Error: --days must be a positive integer');
+        process.exit(1);
+      }
+      i++;
+    } else if (arg === '--clear') {
+      config.clear = true;
+    } else if (arg === '--verbose' || arg === '-v') {
+      config.verbose = true;
+    } else if (arg === '--help' || arg === '-h') {
+      printHelp();
+      process.exit(0);
+    } else if (arg.startsWith('--days=')) {
+      config.days = parseInt(arg.split('=')[1], 10);
+      if (Number.isNaN(config.days) || config.days < 1) {
+        console.error('Error: --days must be a positive integer');
+        process.exit(1);
+      }
+    }
+  }
+
+  return config;
+}
+
+function printHelp(): void {
+  console.log(`
+Sample data generator
+
+Generates realistic analytics data for local development and testing.
+
+Usage:
+  pnpm db:seed [options]
+
+Options:
+  --days <number>    Number of days of data to generate (default: 30)
+  --clear            Clear existing demo data before generating
+  --verbose, -v      Show detailed progress
+  --help, -h         Show this help message
+
+Examples:
+  pnpm db:seed                 # Generate 30 days of data
+  pnpm db:seed --days 90       # Generate 90 days of data
+  pnpm db:seed --clear         # Clear existing demo data first
+  pnpm db:seed --days 7 -v     # Generate 7 days with verbose output
+
+Generated Sites:
+  - Demo Blog:  Low traffic (~90 sessions/month)
+  - Demo SaaS:  Average traffic (~500 sessions/day) with purchase events
+
+Note:
+  This script is blocked from running in production environments
+  (NODE_ENV=production or cloud platforms like Vercel/Netlify/Railway).
+`);
+}
+
+function checkEnvironment(): void {
+  const nodeEnv = process.env.NODE_ENV;
+
+  if (nodeEnv === 'production') {
+    console.error('\nError: db:seed cannot run in production environment.');
+    console.error('This script is only for local development and testing.\n');
+    process.exit(1);
+  }
+
+  if (process.env.VERCEL) {
+    console.error('\nError: db:seed cannot run in cloud environments.');
+    console.error('This script is only for local development and testing.\n');
+    process.exit(1);
+  }
+}
+
+async function main(): Promise<void> {
+  console.log('\nSample data generator\n');
+
+  checkEnvironment();
+
+  const config = parseArgs();
+
+  try {
+    await seed(config);
+  } catch (error) {
+    console.error('\nError generating seed data:', error);
+    process.exit(1);
+  }
+}
+
+main();

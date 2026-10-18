@@ -1,0 +1,11 @@
+[Unit]
+Description=Expire unsaved OpenTracker replay chunks
+After=opentracker.service
+
+[Service]
+Type=oneshot
+User=opentracker
+EnvironmentFile=/etc/opentracker.env
+ExecStart=/usr/bin/node --input-type=module -e 'const r = await fetch("http://127.0.0.1:3000/api/cron/cleanup-replays", { headers: { Authorization: "Bearer " + process.env.CRON_SECRET } }); if (!r.ok) process.exit(1);'
+NoNewPrivileges=true
+PrivateTmp=true

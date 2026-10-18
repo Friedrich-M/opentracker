@@ -1,0 +1,447 @@
+/*
+ * The dashboard wears opencode's v2 documentation design. src/app/opencode.css
+ * is their stylesheet, vendored as written; this file maps its tokens onto the
+ * UI library (Zen) and adapts the dashboard's own markup to it.
+ *
+ * The theme follows the system unless one is chosen in the dashboard (Zen
+ * stores it and sets data-theme). Dark is opencode's docs palette; light takes
+ * opencode.ai's homepage palette (packages/console/app/src/routes/index.css),
+ * so both come from their code. Before Zen sets data-theme, the media query
+ * picks the same palette, so the first paint matches.
+ */
+/* opencode's ornate logo colours, dark (logo-ornate-dark.svg); the light
+   blocks below take logo-ornate-light.svg. Declared first so they win. */
+:root {
+  --logo-strong: #f1ecec;
+  --logo-base: #b7b1b1;
+  --logo-shadow: #4b4646;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --background: #fdfcfc;
+  --foreground: #201d1d;
+  --muted: #646262;
+  --border: #e0dede;
+  --surface: #f8f7f7;
+  --surface-hover: #f1eeee;
+  --link: #201d1d;
+  --logo-strong: #211e1e;
+  --logo-base: #656363;
+  --logo-shadow: #cfcecd;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --background: #fdfcfc;
+    --foreground: #201d1d;
+    --muted: #646262;
+    --border: #e0dede;
+    --surface: #f8f7f7;
+    --surface-hover: #f1eeee;
+    --link: #201d1d;
+    --logo-strong: #211e1e;
+    --logo-base: #656363;
+    --logo-shadow: #cfcecd;
+  }
+}
+
+:root {
+  /* Names the dashboard's modules use, on opencode's tokens. */
+  --site-paper: var(--background);
+  --site-weak: var(--surface);
+  --site-weak-hover: var(--surface-hover);
+  --site-rule: var(--border);
+  --site-rule-strong: var(--muted);
+  --site-ink: var(--foreground);
+  --site-ink-secondary: var(--muted);
+  --site-ink-tertiary: var(--muted);
+  --site-accent: #4d8eff;
+
+  --zen-font-family:
+    "OpenTUI Mono", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", monospace;
+  --zen-font-family-mono: var(--zen-font-family);
+  --zen-radius: 0;
+  --zen-shadow: none;
+
+  --zen-primary: var(--foreground);
+  --zen-primary-fg: var(--background);
+  --zen-surface: var(--background);
+  --zen-surface-raised: var(--background);
+  --zen-surface-sunken: var(--surface);
+  --zen-surface-overlay: var(--surface);
+  --zen-surface-inverted: var(--foreground);
+  --zen-surface-disabled: var(--surface);
+  --zen-fg: var(--foreground);
+  --zen-fg-muted: var(--muted);
+  --zen-fg-disabled: color-mix(in srgb, var(--muted) 60%, var(--background));
+  --zen-border: var(--border);
+  --zen-border-muted: color-mix(in srgb, var(--border) 60%, var(--background));
+  --zen-border-strong: var(--muted);
+  --zen-interactive-bg: var(--surface);
+  --zen-interactive-bg-hover: var(--surface-hover);
+  --zen-interactive-bg-pressed: var(--border);
+  --zen-focus-ring: var(--link);
+  --zen-focus-offset: var(--background);
+
+  /* opencode's callout tip and its POST/DELETE method colours. */
+  --zen-status-success: #70c997;
+  --zen-status-success-bg: #0b1b11;
+  --zen-status-error: #e67c7c;
+  --zen-status-error-bg: color-mix(in srgb, #e67c7c 12%, transparent);
+
+  /*
+   * opencode's type scale (12 / 14 / 16 / 18 / 20 / 30px) and weights
+   * (400 text, 700 strong text and headings) on Zen's utilities. Zen's
+   * `medium` is its button weight, which opencode sets at 400.
+   */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.6;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.8;
+  --text-base: 1rem;
+  --text-base--line-height: 1.8;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.5;
+  --text-2xl: 1.25rem;
+  --text-2xl--line-height: 1.5;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1.2;
+  --text-4xl: 1.875rem;
+  --text-4xl--line-height: 1.2;
+
+  --font-weight-medium: 400;
+  --font-weight-semibold: 700;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 700;
+  --font-weight-black: 700;
+}
+
+[data-theme="light"] {
+  --zen-status-success: #2f7a3e;
+  --zen-status-success-bg: color-mix(in srgb, #2f7a3e 10%, transparent);
+  --zen-status-error: #b3392c;
+  --zen-status-error-bg: color-mix(in srgb, #b3392c 10%, transparent);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --zen-status-success: #2f7a3e;
+    --zen-status-success-bg: color-mix(in srgb, #2f7a3e 10%, transparent);
+    --zen-status-error: #b3392c;
+    --zen-status-error-bg: color-mix(in srgb, #b3392c 10%, transparent);
+  }
+}
+
+body {
+  font-family: var(--zen-font-family);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Zen's buttons and button-links are not underlined on hover (opencode.css
+   underlines every a:hover). */
+[data-slot="button"]:hover {
+  text-decoration: none;
+}
+
+/* Zen's headings take opencode's .prose h2 (section titles) and h1 (page
+   titles). [class] outranks Zen's size and weight utilities and leaves the
+   bare h2 of opencode's sidebar (NavMenu) to opencode.css. */
+:is(h1, h2, h3, h4, h5, h6)[class] {
+  font-size: 1.25rem;
+  line-height: 1.5;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.page-title[class] {
+  font-size: 1.875rem;
+  line-height: 1.2;
+}
+
+/* Strong text is the foreground. Zen's utilities are layered and an unlayered
+   rule would beat them all (a primary button's label would vanish), so this
+   sits in their layer at zero specificity: any colour utility wins. */
+@layer utilities {
+  :where(.font-semibold, .font-bold, strong, b, th) {
+    color: var(--foreground);
+  }
+}
+
+/* The shell (App.tsx, TopNav.tsx): opencode's header and frame, without the
+   table-of-contents column. */
+.docs-frame {
+  grid-template-columns: 15rem minmax(0, 1fr);
+}
+
+/*
+ * Text in opencode's logo style (PixelWordmark.tsx). Heights are whole-pixel
+ * scales of the glyphs' 42-unit box (3, 4 or 9 px cells), except the header,
+ * which takes opencode's own brand size: 21px for a website's name on phones,
+ * 28px on wider screens (its letters about the favicon's height), 63px on login.
+ */
+.pixel-strong {
+  fill: var(--logo-strong);
+}
+
+.pixel-base {
+  fill: var(--logo-base);
+}
+
+.pixel-shadow {
+  fill: var(--logo-shadow);
+}
+
+.pixel-plain {
+  fill: var(--foreground);
+}
+
+.brand svg,
+.page-wordmark,
+.login-wordmark svg {
+  display: block;
+  width: auto;
+  shape-rendering: crispEdges;
+}
+
+/* Their brand logo's cell exactly: "opencode" is 39 cells across 7.75rem. */
+.brand svg {
+  height: calc(7.75rem / 39 * 7);
+}
+
+.page-wordmark {
+  height: 1.3125rem;
+}
+
+@media (min-width: 48rem) {
+  .page-wordmark {
+    height: 1.75rem;
+  }
+}
+
+.login-wordmark {
+  margin: 0;
+}
+
+.login-wordmark svg {
+  height: 3.9375rem;
+}
+
+.header-account {
+  flex: none;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.search-trigger {
+  padding: 0;
+}
+
+.search-trigger [data-slot="button"] {
+  border: 0;
+  background: transparent;
+}
+
+/* Keep both website switching and account access on-screen on narrow devices. */
+@media (max-width: 48rem) {
+  .site-header .header-inner {
+    gap: 0.5rem;
+  }
+
+  .site-header .brand svg {
+    height: 1.125rem;
+  }
+
+  .site-header .header-spacer {
+    display: none;
+  }
+
+  .site-header .search-trigger {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .site-header .search-trigger > div,
+  .site-header .search-trigger [data-slot="button"] {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .site-header .search-trigger [data-slot="button"] > div {
+    min-width: 0;
+  }
+
+  .site-header .header-account {
+    margin-left: auto;
+  }
+
+  /* Wide metric tables scroll within their panel instead of widening the page. */
+  .frame-grid {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .frame-grid > * {
+    min-width: 0;
+    overflow-x: auto;
+  }
+}
+
+/* The share pages' navigation, in opencode's sidebar style. */
+.nav-item {
+  color: var(--muted);
+}
+
+.nav-item:hover,
+.nav-item[data-selected="true"] {
+  color: var(--foreground);
+}
+
+.nav-item[data-selected="true"] {
+  font-weight: 700;
+}
+
+.nav-section {
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/*
+ * Panels as cells of one bordered frame, as opencode rules its API operation
+ * lists rather than spacing out cards. The frame draws the top and left rules
+ * and each cell its right and bottom, so a short last row leaves no filled
+ * gap; stacked frames overlap by a pixel so each boundary is one rule.
+ */
+.frame-grid {
+  gap: 0;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+
+.frame-grid > * {
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.frame-stack {
+  gap: 0;
+}
+
+/* Positioned so a later frame paints its top rule over the frame before it
+   (panels are position: relative, which would otherwise paint on top). */
+.frame-stack > * {
+  position: relative;
+}
+
+.frame-stack > * + * {
+  margin-top: -1px;
+}
+
+/* Zen's rem-based typography and spacing assume the browser's default root size. */
+html {
+  font-size: 100%;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100vh;
+}
+
+html[style*="padding-right"] {
+  padding-right: 0 !important;
+}
+
+/* Fix autofill background color to match theme */
+input:is(:-webkit-autofill, :autofill),
+input:is(:-webkit-autofill, :autofill):hover,
+input:is(:-webkit-autofill, :autofill):focus,
+input:is(:-webkit-autofill, :autofill):active,
+textarea:is(:-webkit-autofill, :autofill),
+textarea:is(:-webkit-autofill, :autofill):hover,
+textarea:is(:-webkit-autofill, :autofill):focus,
+select:is(:-webkit-autofill, :autofill),
+select:is(:-webkit-autofill, :autofill):hover,
+select:is(:-webkit-autofill, :autofill):focus {
+  color: var(--zen-fg) !important;
+  caret-color: var(--zen-fg);
+  box-shadow: 0 0 0 1000px var(--zen-surface) inset !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--zen-surface) inset !important;
+  -webkit-text-fill-color: var(--zen-fg) !important;
+  transition:
+    background-color 5000s ease-in-out 0s,
+    color 5000s ease-in-out 0s;
+}
+
+/* Code snippet textareas */
+.code-textarea textarea {
+  min-height: 100px;
+  padding-right: 36px;
+}
+
+/* rrweb-player overrides */
+.rr-controller__btns {
+  gap: 8px;
+}
+
+[data-theme="dark"] .rr-controller__btns button {
+  color: black;
+}
+
+[data-theme="dark"] .rr-controller__btns .label {
+  color: black;
+}
+
+@media (max-width: 640px) {
+  .rr-controller {
+    height: auto !important;
+    padding: 8px 0 10px;
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .rr-timeline {
+    width: calc(100% - 24px) !important;
+    gap: 4px;
+  }
+
+  .rr-timeline__time {
+    width: auto !important;
+    min-width: 44px;
+    font-size: 12px;
+  }
+
+  .rr-progress {
+    margin: 0 2px;
+  }
+
+  .rr-controller__btns {
+    width: calc(100% - 24px);
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    justify-content: center;
+    column-gap: 6px;
+    row-gap: 8px;
+    font-size: 12px;
+    overflow: hidden;
+  }
+
+  .rr-controller__btns button {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+  }
+
+  .rr-controller__btns .label {
+    margin: 0 4px;
+    font-size: 12px;
+  }
+}

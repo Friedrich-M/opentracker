@@ -1,0 +1,495 @@
+/*
+ * Visitor Activity: StatCounter's log, folded. One ruled line per session —
+ * replay, time, views, place, network, referrer, entry page, system — that
+ * opens to the full record in two columns (the visit, then the visitor).
+ */
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--site-rule);
+}
+
+.entry {
+  border-bottom: 1px solid var(--site-rule);
+}
+
+/* Column names for the one-line summaries; hidden once they stack. */
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--site-rule);
+  color: var(--site-ink-tertiary);
+  font-size: 0.85em;
+}
+
+.head .toggle {
+  cursor: default;
+}
+
+.internal .summary {
+  opacity: 0.62;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+}
+
+.summary:hover {
+  background: var(--site-weak);
+}
+
+.play {
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  width: 32px;
+}
+
+/* StatCounter's round play button, drawn in the site's geometry. */
+.playButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1.5px dashed var(--site-accent);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--site-ink);
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.playButton svg {
+  width: 12px;
+  height: 12px;
+  margin-left: 2px;
+  fill: currentColor;
+}
+
+.playButton:hover {
+  background: var(--site-rule);
+}
+
+.playButton:focus-visible,
+.toggle:focus-visible {
+  outline: 2px solid var(--zen-focus-ring);
+  outline-offset: 2px;
+}
+
+.noReplay {
+  width: 28px;
+  height: 28px;
+  border: 1.5px dashed var(--site-rule);
+  border-radius: 50%;
+}
+
+.toggle {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 9.5rem minmax(0, 2fr) 4rem minmax(0, 0.85fr) minmax(0, 2fr) 4rem 16px;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.toggle > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/*
+ * Where the visitor came from and where they landed: the line's lead, set in
+ * ink and weight, joined by the accent arrow (geometry, not text colour). The
+ * other cells step back to secondary ink.
+ */
+.cellJourney {
+  font-weight: 500;
+}
+
+.source,
+.landing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.landing {
+  flex-shrink: 0;
+  max-width: 60%;
+}
+
+.direct {
+  color: var(--site-ink-tertiary);
+  font-weight: 400;
+}
+
+.journeyArrow {
+  flex-shrink: 0;
+  margin: 0 4px;
+  color: var(--site-accent);
+  font-weight: 400;
+}
+
+.more {
+  flex-shrink: 0;
+  color: var(--site-ink-tertiary);
+  font-weight: 400;
+}
+
+/* Share views have no organisation column (VisitorActivity.tsx). */
+.list[data-network="false"] .toggle {
+  grid-template-columns: 9.5rem minmax(0, 2fr) 4rem minmax(0, 1.5fr) 4rem 16px;
+}
+
+.cellViews,
+.cellPlace,
+.cellOrg {
+  color: var(--site-ink-secondary);
+}
+
+.headJourney {
+  color: var(--site-ink-secondary);
+}
+
+.ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unit {
+  display: none;
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--site-ink-tertiary);
+  transition: transform 160ms ease;
+}
+
+.chevron[data-open] {
+  transform: rotate(180deg);
+}
+
+.inlineIcon {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  color: var(--site-ink-tertiary);
+}
+
+.details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 4px 28px;
+  padding: 6px 4px 16px 44px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 3px 14px;
+  margin: 0;
+  align-content: start;
+}
+
+.fields dt {
+  color: var(--site-ink-secondary);
+  white-space: nowrap;
+}
+
+.fields dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.time {
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+
+.seconds {
+  color: var(--site-ink-tertiary);
+  font-size: 0.85em;
+}
+
+.muted {
+  color: var(--site-ink-tertiary);
+}
+
+.org {
+  font-weight: 500;
+}
+
+.url {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--site-rule);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.url:hover {
+  text-decoration-color: var(--site-accent);
+}
+
+.external {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-left: 4px;
+  vertical-align: -2px;
+  color: var(--site-ink-tertiary);
+}
+
+.tag {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0 7px;
+  border: 1px solid var(--site-rule);
+  border-radius: 4px;
+  font-size: 0.8em;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+/* "You": the owner's own visit, marked with the accent as a rule, not as text. */
+.you {
+  border-color: var(--site-accent);
+}
+
+@media (max-width: 900px) {
+  .head {
+    display: none;
+  }
+
+  .toggle {
+    grid-template-columns: minmax(0, 1fr) auto 16px;
+    grid-template-areas:
+      "time views chevron"
+      "journey journey chevron"
+      "place system chevron"
+      "org org chevron";
+    gap: 2px 10px;
+  }
+
+  /* Repeated here because this selector outranks the phone-width .toggle rule. */
+  .list[data-network="false"] .toggle {
+    grid-template-columns: minmax(0, 1fr) auto 16px;
+    grid-template-areas:
+      "time views chevron"
+      "journey journey chevron"
+      "place system chevron";
+  }
+
+  .cellTime {
+    grid-area: time;
+  }
+  .cellViews {
+    grid-area: views;
+    justify-content: flex-end;
+  }
+  .cellPlace {
+    grid-area: place;
+  }
+  .cellSystem {
+    grid-area: system;
+    justify-content: flex-end;
+  }
+  .cellOrg {
+    grid-area: org;
+  }
+  .cellJourney {
+    grid-area: journey;
+    flex-wrap: wrap;
+  }
+
+  /* The lead wraps rather than truncating on a narrow screen. */
+  .cellJourney .ellipsis {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .landing {
+    flex-shrink: 0;
+  }
+  .chevron {
+    grid-area: chevron;
+  }
+
+  .unit {
+    display: inline;
+  }
+
+  .details {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: 4px;
+  }
+}
+
+/* The visitor panel's facts: two columns of label/value pairs. */
+.facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px 32px;
+}
+
+@media (max-width: 720px) {
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Navigation paths in the visitor panel: one folded, ruled block per visit. */
+.visits {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--site-rule);
+}
+
+.visit {
+  border-bottom: 1px solid var(--site-rule);
+}
+
+.visitHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  width: 100%;
+  padding: 10px 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.visitHead:hover {
+  background: var(--site-weak);
+}
+
+.visitHead:focus-visible {
+  outline: 2px solid var(--zen-focus-ring);
+  outline-offset: -2px;
+}
+
+.visitHead .chevron {
+  margin-left: auto;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 2px 4px 14px 16px;
+  list-style: none;
+}
+
+.stepFrom {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 4.5rem;
+  font-size: 0.9em;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+
+.stepPage {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The expanded row's page path: one page per line, numbered, flush with the
+   other values. */
+.pageList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pageList li {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  align-items: baseline;
+}
+
+.pageIndex {
+  color: var(--site-ink-tertiary);
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* "Visitor details": a text action aligned with the values, not a padded button. */
+.detailsLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--site-rule);
+  text-underline-offset: 3px;
+}
+
+.detailsLink:hover {
+  text-decoration-color: var(--site-accent);
+}
+
+.detailsLink svg {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+}

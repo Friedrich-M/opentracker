@@ -1,0 +1,20 @@
+[Unit]
+Description=OpenTracker analytics
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=opentracker
+Group=opentracker
+WorkingDirectory=/srv/opentracker/app
+EnvironmentFile=/etc/opentracker.env
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

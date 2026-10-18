@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenTracker Development"
+  short_description: "Implement and verify OpenTracker changes"
+  default_prompt: "Use $opentracker-development to implement this OpenTracker change and verify the affected behavior."

@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "incremental": false,
+    "noEmit": true,
+    "noImplicitAny": true,
+    "outDir": "../../public",
+    "rootDir": ".",
+    "sourceMap": false,
+    "strict": true,
+    "strictNullChecks": true,
+    "target": "es2022"
+  },
+  "include": ["*.ts"],
+  "exclude": ["*.test.ts", "*.d.ts"]
+}

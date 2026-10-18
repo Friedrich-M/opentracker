@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "src/app/**/contract*.ts",
+        "src/recorder/index.js",
+        "src/tracker/index.ts",
+        "scripts/**/*.{js,mjs,ts}",
+        "src/**/*.test.{ts,tsx}",
+        "src/test/**/*.{ts,tsx}"
+      ],
+      "project": ["src/**/*.{ts,tsx,js}", "scripts/**"],
+      "rollup": {
+        "config": ["src/*/rollup.config.js"]
+      },
+      "ignore": ["src/tracker/index.d.ts"],
+      "ignoreDependencies": ["punycode"]
+    }
+  }
+}

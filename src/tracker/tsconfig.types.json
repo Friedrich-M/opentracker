@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "outDir": ".",
+    "removeComments": false,
+    "rootDir": "."
+  },
+  "include": ["index.ts"],
+  "exclude": []
+}
