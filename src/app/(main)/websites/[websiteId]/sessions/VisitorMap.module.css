@@ -1,0 +1,65 @@
+.map {
+  position: relative;
+  height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--site-rule);
+  border-radius: 6px;
+  background: var(--site-weak);
+}
+
+.tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* OpenStreetMap's tiles are light; the dark theme inverts them to ink. */
+[data-theme="dark"] .tile {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9);
+}
+
+/* The accuracy circle and the point are geometry: the accent's to draw. */
+.area {
+  position: absolute;
+  border: 1.5px solid var(--site-accent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--site-accent) 12%, transparent);
+  transform: translate(-50%, -50%);
+}
+
+.point {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--site-paper);
+  border-radius: 50%;
+  background: var(--site-accent);
+  transform: translate(-50%, -50%);
+}
+
+.caption {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--site-rule);
+  border-radius: 4px;
+  background: var(--site-paper);
+  font-size: 0.85em;
+}
+
+.attribution {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 1px 6px;
+  background: color-mix(in srgb, var(--site-paper) 85%, transparent);
+  color: var(--site-ink-tertiary);
+  font-size: 11px;
+}
+
+.attribution a {
+  color: inherit;
+}

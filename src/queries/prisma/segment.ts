@@ -1,0 +1,52 @@
+import type { Prisma, Segment } from '@/generated/prisma/client';
+import prisma from '@/lib/prisma';
+import type { PageResult, QueryFilters } from '@/lib/types';
+
+async function getSegments(
+  criteria: Prisma.SegmentFindManyArgs,
+  filters: QueryFilters,
+): Promise<PageResult<Segment[]>> {
+  const { search } = filters;
+  const { getSearchParameters, pagedQuery } = prisma;
+
+  const where: Prisma.SegmentWhereInput = {
+    ...criteria.where,
+    ...getSearchParameters(search, [
+      {
+        name: 'contains',
+      },
+    ]),
+  };
+
+  return pagedQuery('segment', { ...criteria, where }, filters);
+}
+
+export async function getWebsiteSegment(websiteId: string, segmentId: string) {
+  return prisma.client.segment.findFirst({
+    where: { id: segmentId, websiteId },
+  });
+}
+
+export async function getWebsiteSegments(websiteId: string, type: string, filters?: QueryFilters) {
+  return getSegments(
+    {
+      where: {
+        websiteId,
+        type,
+      },
+    },
+    filters,
+  );
+}
+
+export async function createSegment(data: Prisma.SegmentUncheckedCreateInput) {
+  return prisma.client.segment.create({ data });
+}
+
+export async function updateSegment(SegmentId: string, data: Prisma.SegmentUpdateInput) {
+  return prisma.client.segment.update({ where: { id: SegmentId }, data });
+}
+
+export async function deleteSegment(SegmentId: string) {
+  return prisma.client.segment.delete({ where: { id: SegmentId } });
+}

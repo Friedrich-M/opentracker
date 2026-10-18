@@ -1,0 +1,94 @@
+# Dependencies and package-manager state
+node_modules
+.pnp
+.pnp.*
+.pnpm-store/
+.yarn/
+package-lock.json
+
+# Generated app, tracker, API and geolocation output
+.next/
+/out/
+/build/
+/dist/
+/generated/
+/src/generated/
+/public/script.js
+/public/recorder.js
+/public/openapi.json
+/geo/
+next-env.d.ts
+*.tsbuildinfo
+
+# Local configuration and credentials (only reviewed root examples are public)
+.env*
+*.env
+*.env.*
+!/.env.example
+.dev.vars*
+*.pem
+*.key
+*.p12
+*.pfx
+.mcp.json
+.mcp.local.json
+.vercel/
+.wrangler/
+
+# Local data, exports, captures and operational notes
+.local/
+.local-db/
+/private/
+/secrets/
+/backups/
+/dumps/
+/exports/
+/artifacts/
+/screenshots/
+/replays/
+playwright/.auth/
+.auth/
+*storage-state*.json
+*storageState*.json
+*.dump
+*.backup
+*.bak
+# SQL source migrations are public; database dumps are not.
+*.sql
+!/prisma/migrations/**/*.sql
+*.sql.gz
+*.sql.bz2
+*.sql.xz
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+*.db
+*.db-*
+*.csv
+*.har
+*.log
+*.log.*
+screenshot-*.png
+
+# Test output (synthetic fixtures in src/test remain trackable)
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# Local editor and agent state; shared skills remain versioned
+.DS_Store
+.idea/
+.vscode/
+*.iml
+.tool-versions
+.claude/*
+!.claude/skills/
+.agents/
+.codex/
+tmpclaude*
+nul
+
+# Maintainer notes stay local
+/CHANGELOG.md

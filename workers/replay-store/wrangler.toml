@@ -1,0 +1,13 @@
+# The Cloudflare Worker that stores replay chunks in R2 for the tracker
+# (docs/architecture.md, "Replay store"). Postgres keeps each chunk's
+# metadata row; the gzipped rrweb events live here.
+# Deploy: npx wrangler deploy                        (from this folder)
+# Secret: npx wrangler secret put REPLAY_STORE_SECRET (same value as the
+#         tracker's REPLAY_STORE_SECRET on Vercel)
+name = "tracker-replay-store"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[[r2_buckets]]
+binding = "REPLAYS"
+bucket_name = "tracker-replays"

@@ -1,0 +1,41 @@
+/*
+ * opencode's tab row (.docs-plan-tabs-list in src/app/opencode.css, values as
+ * written there). Theirs styles buttons; these tabs are links, so the rules
+ * are repeated here for `a` with aria-current in place of aria-selected.
+ */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+  list-style: none;
+}
+
+.tab {
+  display: block;
+  margin-bottom: -1px;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tab:hover {
+  text-decoration: none;
+}
+
+.tab[aria-current="page"] {
+  border-bottom-color: var(--foreground);
+  color: var(--foreground);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}

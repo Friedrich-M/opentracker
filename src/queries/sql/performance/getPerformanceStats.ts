@@ -1,0 +1,84 @@
+import prisma from '@/lib/prisma';
+import type { QueryFilters } from '@/lib/types';
+
+import type { PerformanceParameters, PerformanceResult } from './getPerformance';
+
+export async function getPerformanceStats(
+  ...args: [websiteId: string, parameters: PerformanceParameters, filters: QueryFilters]
+) {
+  return relationalQuery(...args);
+}
+
+async function relationalQuery(
+  websiteId: string,
+  parameters: PerformanceParameters,
+  filters: QueryFilters,
+): Promise<PerformanceResult['summary']> {
+  const { startDate, endDate } = parameters;
+  const { rawQuery, parseFilters } = prisma;
+  const { filterQuery, joinSessionQuery, cohortQuery, queryParams } = parseFilters({
+    ...filters,
+    websiteId,
+  });
+
+  const summaryResult = await rawQuery(
+    `
+    select
+      percentile_cont(0.5) within group (order by lcp) as lcp_p50,
+      percentile_cont(0.75) within group (order by lcp) as lcp_p75,
+      percentile_cont(0.95) within group (order by lcp) as lcp_p95,
+      percentile_cont(0.5) within group (order by inp) as inp_p50,
+      percentile_cont(0.75) within group (order by inp) as inp_p75,
+      percentile_cont(0.95) within group (order by inp) as inp_p95,
+      percentile_cont(0.5) within group (order by cls) as cls_p50,
+      percentile_cont(0.75) within group (order by cls) as cls_p75,
+      percentile_cont(0.95) within group (order by cls) as cls_p95,
+      percentile_cont(0.5) within group (order by fcp) as fcp_p50,
+      percentile_cont(0.75) within group (order by fcp) as fcp_p75,
+      percentile_cont(0.95) within group (order by fcp) as fcp_p95,
+      percentile_cont(0.5) within group (order by ttfb) as ttfb_p50,
+      percentile_cont(0.75) within group (order by ttfb) as ttfb_p75,
+      percentile_cont(0.95) within group (order by ttfb) as ttfb_p95,
+      count(*) as count
+    from website_event
+    ${cohortQuery}
+    ${joinSessionQuery}
+    where website_event.website_id = {{websiteId::uuid}}
+      and website_event.event_type = 5
+      and website_event.created_at between {{startDate}} and {{endDate}}
+      ${filterQuery}
+    `,
+    { ...queryParams, startDate, endDate },
+  ).then(result => result?.[0]);
+
+  const summary = {
+    lcp: {
+      p50: Number(summaryResult?.lcp_p50 || 0),
+      p75: Number(summaryResult?.lcp_p75 || 0),
+      p95: Number(summaryResult?.lcp_p95 || 0),
+    },
+    inp: {
+      p50: Number(summaryResult?.inp_p50 || 0),
+      p75: Number(summaryResult?.inp_p75 || 0),
+      p95: Number(summaryResult?.inp_p95 || 0),
+    },
+    cls: {
+      p50: Number(summaryResult?.cls_p50 || 0),
+      p75: Number(summaryResult?.cls_p75 || 0),
+      p95: Number(summaryResult?.cls_p95 || 0),
+    },
+    fcp: {
+      p50: Number(summaryResult?.fcp_p50 || 0),
+      p75: Number(summaryResult?.fcp_p75 || 0),
+      p95: Number(summaryResult?.fcp_p95 || 0),
+    },
+    ttfb: {
+      p50: Number(summaryResult?.ttfb_p50 || 0),
+      p75: Number(summaryResult?.ttfb_p75 || 0),
+      p95: Number(summaryResult?.ttfb_p95 || 0),
+    },
+    count: Number(summaryResult?.count || 0),
+  };
+
+  return summary;
+}
