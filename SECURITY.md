@@ -12,7 +12,7 @@ Operators are responsible for their deployment's credentials, access, backups, c
 
 ## Supported code
 
-Security fixes target the current `main` branch. Older commits and upstream Umami releases are not maintained by this project. Include the exact commit in a report; the inherited package version is not a promise of a separately supported OpenTracker release.
+Security fixes target the current `main` branch. Older commits and upstream Umami releases are not maintained by this project. Include the release version or the exact commit in a report. Releases are tagged on GitHub; a tag marks a tested commit, not a separately maintained branch.
 
 ## Dependency review
 
