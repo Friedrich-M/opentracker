@@ -88,6 +88,17 @@ describe('getIpAddress', () => {
     ).toBe('1.2.3.4');
     expect(getIpAddress(headers({ 'cf-connecting-ip': '203.0.113.5' }))).toBeUndefined();
   });
+
+  // Vercel sets x-real-ip itself; a client's own true-client-ip must not win.
+  test('trusts x-real-ip on Vercel when CLIENT_IP_HEADER is unset', () => {
+    vi.stubEnv('CLIENT_IP_HEADER', '');
+    vi.stubEnv('VERCEL', '1');
+
+    expect(
+      getIpAddress(headers({ 'true-client-ip': '203.0.113.6', 'x-real-ip': '203.0.113.7' })),
+    ).toBe('203.0.113.7');
+    vi.unstubAllEnvs();
+  });
 });
 
 describe('stripPort', () => {

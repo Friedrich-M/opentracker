@@ -4,6 +4,7 @@ import { parseSecureToken, parseToken } from '@/lib/jwt';
 import { getApiKeyByHash, updateApiKeyLastUsed } from '@/queries/prisma/apiKey';
 import { getShare } from '@/queries/prisma/share';
 import { getUser } from '@/queries/prisma/user';
+import { getWebsite } from '@/queries/prisma/website';
 import { hashApiKey } from './api-key';
 import { checkAuth, parseShareToken } from './auth';
 
@@ -18,6 +19,10 @@ vi.mock('@/queries/prisma/user', () => ({
 
 vi.mock('@/queries/prisma/share', () => ({
   getShare: vi.fn(),
+}));
+
+vi.mock('@/queries/prisma/website', () => ({
+  getWebsite: vi.fn(),
 }));
 
 vi.mock('@/queries/prisma/apiKey', () => ({
@@ -262,5 +267,51 @@ describe('parseShareToken', () => {
     vi.mocked(getShare).mockResolvedValueOnce({ id: 'share-1', entityId: 'w-2' } as any);
 
     await expect(parseShareToken(request())).resolves.toBeNull();
+  });
+});
+
+describe('checkAuth with a session and a share token', () => {
+  // A signed-in user on a share page sends both. The share must not lend its
+  // website to the account, nor the account its network access to the share.
+  const request = () =>
+    new Request('http://localhost/api/websites/w-1/sessions', {
+      headers: {
+        authorization: 'Bearer secure-token',
+        'x-tracker-share-token': 'token',
+        'x-tracker-share-context': '1',
+      },
+    });
+
+  beforeEach(() => {
+    parseSecureTokenMock.mockReturnValue({ userId: 'user-1', pwd: hash(PASSWORD_HASH) } as any);
+    mockUser();
+    vi.mocked(parseToken).mockReturnValue({
+      type: 'share',
+      shareId: 'share-1',
+      websiteId: 'w-1',
+    } as any);
+    vi.mocked(getShare).mockResolvedValue({
+      id: 'share-1',
+      entityId: 'w-1',
+      parameters: {},
+    } as any);
+  });
+
+  test("another account's user sees only the share", async () => {
+    vi.mocked(getWebsite).mockResolvedValueOnce({ id: 'w-1', userId: 'user-2' } as any);
+
+    const result: any = await checkAuth(request());
+
+    expect(result.user).toBeNull();
+    expect(result.shareToken).toMatchObject({ websiteId: 'w-1' });
+  });
+
+  test('the owner keeps full access without the share', async () => {
+    vi.mocked(getWebsite).mockResolvedValueOnce({ id: 'w-1', userId: 'user-1' } as any);
+
+    const result: any = await checkAuth(request());
+
+    expect(result.user?.id).toBe('user-1');
+    expect(result.shareToken).toBeNull();
   });
 });

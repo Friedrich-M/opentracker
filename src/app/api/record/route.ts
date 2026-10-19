@@ -1,21 +1,23 @@
 import { isbot } from 'isbot';
 import { serializeError } from 'serialize-error';
 import { z } from 'zod';
-import { HEATMAP_EVENT_TYPE } from '@/lib/constants';
+import { CACHE_TOKEN_TYPE, HEATMAP_EVENT_TYPE } from '@/lib/constants';
 import { corsPreflight, withCorsHeaders } from '@/lib/cors';
 import { secret } from '@/lib/crypto';
 import { getLocation, hasBlockedIp } from '@/lib/detect';
-import { getIpAddress } from '@/lib/ip';
+import { getIpAddress, getTrustedIpHeader } from '@/lib/ip';
 import { parseToken } from '@/lib/jwt';
-import { getRecorderConfig, isReplayCountry } from '@/lib/recorder';
+import { getMaxReplayChunks, getRecorderConfig, isReplayCountry } from '@/lib/recorder';
 import { getReplayEventCount } from '@/lib/replay';
 import { parseRequest } from '@/lib/request';
 import { badRequest, forbidden, json, payloadTooLarge, serverError } from '@/lib/response';
 import { getWebsite } from '@/queries/prisma';
-import { saveRecording } from '@/queries/sql';
+import { countReplayChunks, saveRecording } from '@/queries/sql';
 import { saveHeatmapEvents } from '@/queries/sql/heatmap/saveHeatmapEvents';
 
 interface Cache {
+  type?: string;
+  websiteId?: string;
   sessionId: string;
   visitId: string;
 }
@@ -70,12 +72,19 @@ const schema = z.discriminatedUnion('type', [
   }),
 ]);
 
+// A page path, always one leading slash: `//other.example/x` or `/\\x` would
+// otherwise resolve to another site when the heatmap builds its page URL.
 function getUrlPath(url: string) {
+  let path: string;
+
   try {
-    return new URL(url).pathname || '/';
+    path = new URL(url).pathname || '/';
   } catch {
-    return url.startsWith('/') ? url.split(/[?#]/)[0] || '/' : '/';
+    path = url.startsWith('/') || url.startsWith('\\') ? url.split(/[?#]/)[0] || '/' : '/';
   }
+
+  // An opaque URL (`javascript:x`) has a pathname without a slash; add one.
+  return `/${path.replace(/^[\\/]+/, '')}`;
 }
 
 async function getRequestBodySize(request: Request): Promise<number | null> {
@@ -139,7 +148,14 @@ export async function POST(request: Request) {
 
     const cache = (await parseToken(cacheHeader, secret())) as Cache | null;
 
-    if (!cache?.sessionId || !cache?.visitId) {
+    // Only the cache token /api/send issued for this website: another token
+    // signed with the same secret, or one from another website, records nothing.
+    if (
+      cache?.type !== CACHE_TOKEN_TYPE ||
+      cache.websiteId !== websiteId ||
+      !cache.sessionId ||
+      !cache.visitId
+    ) {
       return withCorsHeaders(badRequest({ message: 'Invalid session token.' }));
     }
 
@@ -179,11 +195,21 @@ export async function POST(request: Request) {
       }
 
       // Same location source as /api/send. Null means a local or invalid
-      // address (development), which is recorded.
+      // address (development), which is recorded — in production only when
+      // the address comes from the trusted CLIENT_IP_HEADER: otherwise a
+      // client could claim a local address and pass the country check. A
+      // request without that header (one sent past the proxy) has no address
+      // and is refused.
       const location = await getLocation(ip, request.headers, false);
+      const localAllowed =
+        process.env.NODE_ENV !== 'production' || (!!getTrustedIpHeader() && !!ip);
 
-      if (location !== null && !isReplayCountry(location?.country)) {
+      if (location === null ? !localAllowed : !isReplayCountry(location?.country)) {
         return withCorsHeaders(json({ ok: false, reason: 'replay_country' }));
+      }
+
+      if ((await countReplayChunks(websiteId, visitId)) >= getMaxReplayChunks()) {
+        return withCorsHeaders(json({ ok: false, reason: 'replay_limit' }));
       }
 
       const eventTimestamps = events

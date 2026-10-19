@@ -5,26 +5,30 @@ import { buildPath } from '@/lib/url';
 import styles from './ProjectTabs.module.css';
 
 /**
- * Projects are event tags: each page of the site loads the tracker with
- * `data-tag` (home, research, hobbies), and a project view is the `tag` filter.
- * Known projects keep the site's order; any other tag follows alphabetically.
+ * Projects are event tags: each part of the site loads the tracker with its
+ * own `data-tag` (say `docs`, `blog`), and a project view is the `tag` filter.
+ * Tags named in NEXT_PUBLIC_PROJECT_ORDER (comma-separated, read at build time)
+ * come first, in that order; every other tag follows alphabetically.
  */
-const PROJECT_ORDER = ['home', 'research', 'hobbies'];
+const PROJECT_ORDER = (process.env.NEXT_PUBLIC_PROJECT_ORDER ?? '')
+  .split(',')
+  .map(tag => tag.trim())
+  .filter(Boolean);
 
 // Parameters that name something inside one view (a session, a page of
 // results) and mean nothing after the filter changes.
 const VIEW_SCOPED_PARAMS = ['session', 'page', 'full'];
 
-export function orderProjects(tags: string[]) {
+export function orderProjects(tags: string[], order: string[] = PROJECT_ORDER) {
   const rank = (tag: string) => {
-    const i = PROJECT_ORDER.indexOf(tag);
-    return i === -1 ? PROJECT_ORDER.length : i;
+    const i = order.indexOf(tag);
+    return i === -1 ? order.length : i;
   };
 
   return [...new Set(tags.filter(Boolean))].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
-// Display names for the site's projects; any other tag shows capitalised.
+// Translated names for a few common tags; any other tag shows capitalised.
 const PROJECT_LABELS: Record<string, string> = {
   home: 'projectHome',
   research: 'projectResearch',
@@ -54,7 +58,7 @@ export function getProjectHref(
   return buildPath(pathname, tag ? { ...params, tag } : params);
 }
 
-/** All · Home · Research · Hobbies under the website title. All is the default. */
+/** All, then one tab per project, under the website title. All is the default. */
 export function ProjectTabs() {
   const website = useWebsite();
   const { t, labels } = useMessages();

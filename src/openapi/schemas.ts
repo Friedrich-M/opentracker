@@ -75,6 +75,15 @@ export const payloadTooLargeResponse = errorResponse(
   'payload-too-large',
   'Payload too large.',
 );
+export const tooManyRequestsResponse: ZodOpenApiResponseObject = {
+  ...errorResponse('TooManyRequestsResponse', 429, 'too-many-requests', 'Too many requests.'),
+  headers: {
+    'Retry-After': {
+      description: 'Seconds until another attempt is allowed.',
+      schema: { type: 'integer', minimum: 1 },
+    },
+  },
+};
 export const serverErrorResponse = errorResponse(
   'ServerErrorResponse',
   500,
@@ -94,6 +103,7 @@ export const errorResponseComponents = {
   ForbiddenResponse: forbiddenResponse,
   NotFoundResponse: notFoundResponse,
   PayloadTooLargeResponse: payloadTooLargeResponse,
+  TooManyRequestsResponse: tooManyRequestsResponse,
   ServerErrorResponse: serverErrorResponse,
   ServiceUnavailableResponse: serviceUnavailableResponse,
 };

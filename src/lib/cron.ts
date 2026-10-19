@@ -22,3 +22,13 @@ export function getRetentionDays() {
 
   return Number.isFinite(days) && days > 0 ? days : DEFAULT_RETENTION_DAYS;
 }
+
+/**
+ * Days heatmap events are kept (HEATMAP_RETENTION_DAYS), or null when unset:
+ * they are then kept indefinitely, as before the setting existed.
+ */
+export function getHeatmapRetentionDays() {
+  const days = Number(process.env.HEATMAP_RETENTION_DAYS);
+
+  return Number.isFinite(days) && days > 0 ? days : null;
+}

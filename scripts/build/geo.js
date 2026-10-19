@@ -44,42 +44,62 @@ if (!fs.existsSync(dest)) {
   fs.mkdirSync(dest);
 }
 
+// GET a URL, following redirects (MaxMind's download URL redirects to its
+// storage), and fail on any other non-200 answer instead of unpacking an
+// error page.
+const get = (url, redirects = 5) =>
+  new Promise((resolve, reject) => {
+    https
+      .get(url, res => {
+        if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+          res.resume();
+
+          if (!redirects) {
+            reject(new Error(`Too many redirects downloading ${new URL(url).host}`));
+            return;
+          }
+
+          get(new URL(res.headers.location, url).toString(), redirects - 1).then(resolve, reject);
+          return;
+        }
+
+        if (res.statusCode !== 200) {
+          res.resume();
+          // The host only: a MaxMind URL carries the license key.
+          reject(new Error(`HTTP ${res.statusCode} downloading from ${new URL(url).host}`));
+          return;
+        }
+
+        resolve(res);
+      })
+      .on('error', reject);
+  });
+
 // Download handler for compressed tar.gz files
 const downloadCompressed = url =>
-  new Promise(resolve => {
-    https.get(url, res => {
-      resolve(res.pipe(zlib.createGunzip({})).pipe(list()));
-    });
-  });
+  get(url).then(res => res.pipe(zlib.createGunzip({})).pipe(list()));
 
 // Download handler for direct .mmdb files
-const downloadDirect = (url, originalUrl) =>
-  new Promise((resolve, reject) => {
-    https.get(url, res => {
-      // Follow redirects
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        downloadDirect(res.headers.location, originalUrl || url)
-          .then(resolve)
-          .catch(reject);
-        return;
-      }
+const downloadDirect = url =>
+  get(url).then(
+    res =>
+      new Promise((resolve, reject) => {
+        const filename = path.join(dest, path.basename(new URL(url).pathname));
+        const fileStream = fs.createWriteStream(filename);
 
-      const filename = path.join(dest, path.basename(originalUrl || url));
-      const fileStream = fs.createWriteStream(filename);
+        res.pipe(fileStream);
 
-      res.pipe(fileStream);
+        fileStream.on('finish', () => {
+          fileStream.close();
+          console.log('Saved geo database:', filename);
+          resolve();
+        });
 
-      fileStream.on('finish', () => {
-        fileStream.close();
-        console.log('Saved geo database:', filename);
-        resolve();
-      });
-
-      fileStream.on('error', e => {
-        reject(e);
-      });
-    });
-  });
+        fileStream.on('error', e => {
+          reject(e);
+        });
+      }),
+  );
 
 // Download one database, as a direct .mmdb file or a tar.gz archive
 const download = url => {

@@ -374,7 +374,13 @@ function getWebsiteOrigin(domain?: string | null) {
   return new URL(`${protocol}://${host}`);
 }
 
-function buildHeatmapPageUrl(domain: string | null | undefined, urlPath: string) {
+/**
+ * The page a heatmap is drawn over: the recorded path on the website's own
+ * origin, never anywhere else. A stored path such as `//other.example/x`
+ * (recorded before paths were normalised) resolves to another site and
+ * yields null, so the dashboard never frames a page a visitor chose.
+ */
+export function buildHeatmapPageUrl(domain: string | null | undefined, urlPath: string) {
   try {
     const origin = getWebsiteOrigin(domain);
 
@@ -382,7 +388,9 @@ function buildHeatmapPageUrl(domain: string | null | undefined, urlPath: string)
       return null;
     }
 
-    return new URL(urlPath || '/', origin).toString();
+    const url = new URL(urlPath || '/', origin);
+
+    return url.origin === origin.origin ? url.toString() : null;
   } catch {
     return null;
   }

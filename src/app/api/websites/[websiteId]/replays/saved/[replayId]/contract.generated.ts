@@ -177,6 +177,23 @@ const operation2 = defineOperation({
           },
         },
       },
+      '404': {
+        description: 'Not found.',
+        content: {
+          'application/json': {
+            example: {
+              error: {
+                message: 'Not found.',
+                code: 'not-found',
+                status: 404,
+              },
+            },
+            schema: {
+              $ref: '#/components/schemas/ApiError',
+            },
+          },
+        },
+      },
     },
   } as ZodOpenApiOperationObject,
 });

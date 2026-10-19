@@ -1047,6 +1047,9 @@ function IframeSnapshot({ snapshot, onReady }: { snapshot: HeatmapSnapshot; onRe
         loading="lazy"
         scrolling="no"
         referrerPolicy="no-referrer"
+        // The website's own page, scripts allowed so it renders; no forms,
+        // popups or navigation of the dashboard, whatever the page does.
+        sandbox="allow-scripts allow-same-origin"
         onLoad={handleLoad}
         onError={handleError}
       />

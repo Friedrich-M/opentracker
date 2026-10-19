@@ -10,12 +10,16 @@ import type { PageResult, QueryFilters } from '@/lib/types';
  */
 export async function deleteExpiredReplays(before: Date) {
   const saved = await prisma.client.sessionReplaySaved.findMany({
-    select: { visitId: true },
+    select: { websiteId: true, visitId: true },
   });
 
+  // A save keeps its own website's chunks only: matched on the pair, not the
+  // visit id alone, which another website could share.
   const where = {
     createdAt: { lt: before },
-    visitId: { notIn: saved.map(({ visitId }) => visitId) },
+    ...(saved.length
+      ? { NOT: { OR: saved.map(({ websiteId, visitId }) => ({ websiteId, visitId })) } }
+      : {}),
   };
   const expired = await prisma.client.sessionReplay.findMany({
     where,
@@ -31,12 +35,26 @@ export async function deleteExpiredReplays(before: Date) {
   return count;
 }
 
+/** Deletes heatmap events recorded before `before`; returns how many. */
+export async function deleteExpiredHeatmapEvents(before: Date) {
+  const { count } = await prisma.client.heatmapEvent.deleteMany({
+    where: { createdAt: { lt: before } },
+  });
+
+  return count;
+}
+
 export async function getReplaySaved(websiteId: string, visitId: string): Promise<boolean> {
   const record = await prisma.client.sessionReplaySaved.findUnique({
     where: { websiteId_visitId: { websiteId, visitId } },
     select: { id: true },
   });
   return record !== null;
+}
+
+/** Whether this website has replay chunks for the visit, so it can be saved. */
+export async function hasReplayChunks(websiteId: string, visitId: string) {
+  return (await prisma.client.sessionReplay.count({ where: { websiteId, visitId }, take: 1 })) > 0;
 }
 
 export async function createReplaySaved(websiteId: string, visitId: string, name: string) {

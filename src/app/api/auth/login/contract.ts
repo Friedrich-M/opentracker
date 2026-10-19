@@ -4,6 +4,7 @@ import {
   badRequestResponse,
   jsonResponse,
   serviceUnavailableResponse,
+  tooManyRequestsResponse,
   unauthorizedResponse,
 } from '@/openapi/schemas';
 import { loginRequestSchema } from './schema';
@@ -54,6 +55,7 @@ const loginOperation = defineOperation({
       '200': jsonResponse(loginResponseSchema, 'Authenticated successfully.'),
       '400': badRequestResponse,
       '401': unauthorizedResponse,
+      '429': tooManyRequestsResponse,
       '503': serviceUnavailableResponse,
     },
   },

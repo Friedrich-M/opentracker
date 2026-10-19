@@ -60,6 +60,23 @@ test('getLocation: honours only the trusted platform location headers', async ()
   vi.unstubAllEnvs();
 });
 
+// Without a trusted IP header a client could send cf-ipcountry itself, so no
+// provider's location header is believed.
+test('getLocation: ignores location headers without a trusted IP header', async () => {
+  isLocalhost.default.mockResolvedValue(false);
+  vi.stubEnv('CLIENT_IP_HEADER', '');
+  vi.stubEnv('VERCEL', '');
+  vi.stubEnv('GEOLITE_DB_PATH', '/nonexistent/GeoLite2-City.mmdb');
+  const headers = new Headers({ 'cf-ipcountry': 'US', 'cf-ipcity': 'Los Angeles' });
+
+  delete globalThis['maxmind'];
+
+  // No trusted header: the client's cf-ipcountry is ignored, and without the
+  // GeoLite database the visit has no location instead of failing.
+  await expect(getLocation('8.8.8.8', headers, false)).resolves.toBeUndefined();
+  vi.unstubAllEnvs();
+});
+
 test('getLocation: returns null for malformed ip', async () => {
   await expect(
     getLocation(
@@ -76,6 +93,8 @@ test('getLocation: returns null for malformed ip', async () => {
 
 test('getLocation: treats localhost check errors as non-local', async () => {
   isLocalhost.default.mockRejectedValue(new Error('DNS Lookup failed.'));
+  // Location headers count only behind the platform's trusted IP header.
+  vi.stubEnv('CLIENT_IP_HEADER', 'cf-connecting-ip');
 
   await expect(
     getLocation(
@@ -92,6 +111,7 @@ test('getLocation: treats localhost check errors as non-local', async () => {
     region: 'US-CA',
     city: 'Los Angeles',
   });
+  vi.unstubAllEnvs();
 });
 
 test('hasBlockedIp: returns false for malformed client ip with cidr block', () => {

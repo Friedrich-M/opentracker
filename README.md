@@ -14,17 +14,17 @@ _Screenshots come from a local demo database with generated data. No production 
 
 ## Features
 
-| Feature                   | What you get                                                                                                                                                      |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Traffic overview          | Visitors, visits, page views, bounce rate and visit duration over any period, with comparisons and breakdowns by page, referrer, location, browser and device.   |
+| Feature                   | What you get                                                                                                                                                                      |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Traffic overview          | Visitors, visits, page views, bounce rate and visit duration over any period, with comparisons and breakdowns by page, referrer, location, browser and device.                    |
 | Visitor activity          | One line per session: where the visitor came from, where they landed, what they read, their place and organisation. Expand it for the full record and a visitor panel with a map. |
-| Projects within a website | Tag pages (`data-tag="docs"`) and read every report for one project or the whole domain. A visitor crossing projects stays one session.                           |
-| Events and conversions    | Custom events, automatic outbound-link and download events, goals, funnels and journeys.                                                                          |
-| Audience and acquisition  | Retention, segments, cohorts, UTM campaigns and attribution.                                                                                                      |
-| Session replay            | Sampled recordings with per-project playback, saved recordings that never expire, and automatic cleanup of the rest.                                              |
-| Heatmaps                  | Click and scroll maps per page once the recorder is enabled for the website.                                                                                      |
-| Sharing                   | Read-only share links scoped to one website and the sections you choose. Visitor network details never leave the owner's view.                                   |
-| Access control            | Website ownership, an administrator role, API keys and two-factor authentication.                                                                                 |
+| Projects within a website | Tag pages (`data-tag="docs"`) and read every report for one project or the whole domain. A visitor crossing projects stays one session.                                           |
+| Events and conversions    | Custom events, automatic outbound-link and download events, goals, funnels and journeys.                                                                                          |
+| Audience and acquisition  | Retention, segments, cohorts, UTM campaigns and attribution.                                                                                                                      |
+| Session replay            | Sampled recordings with per-project playback, saved recordings that never expire, and automatic cleanup of the rest.                                                              |
+| Heatmaps                  | Click and scroll maps per page once the recorder is enabled for the website.                                                                                                      |
+| Sharing                   | Read-only share links scoped to one website and the sections you choose. Visitor network details never leave the owner's view.                                                    |
+| Access control            | Website ownership, an administrator role, API keys and two-factor authentication.                                                                                                 |
 
 ### Visitor activity in dark mode
 
@@ -54,7 +54,7 @@ A visit needs no cookie: the session id is a hash of the website, the visitor's 
 ## Requirements
 
 - Node.js as pinned in [.node-version](.node-version) and the pnpm version pinned in [package.json](package.json) (`npx --yes pnpm@12.3.4` works without a global install).
-- PostgreSQL 9.4 or newer; CI runs against PostgreSQL 17. Local development can use the bundled embedded server instead.
+- PostgreSQL 14 or newer; CI runs against PostgreSQL 17. Local development can use the bundled embedded server instead.
 - Outbound network access during the build, for the GeoLite2 download.
 
 ## Quick start
@@ -106,34 +106,56 @@ Add a website in the dashboard and copy its tracking code. For an instance at `h
 
 [.env.example](.env.example) holds local development defaults. Keep production secrets in protected server or provider configuration, never in Git.
 
-| Variable                                  | Purpose                                                                                                                                                                                                                       |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                            | PostgreSQL connection used by the application. Required.                                                                                                                                                                      |
-| `APP_SECRET`                              | Random secret for signing tokens. A production build refuses to run without it.                                                                                                                                              |
-| `TWO_FACTOR_ENCRYPTION_KEY`               | 64 hex characters for encrypting two-factor secrets. Keep it stable; changing it invalidates enrolled authenticators.                                                                                                         |
-| `CLIENT_IP_HEADER`                        | The one proxy header that carries the visitor's address, such as `x-forwarded-for` on Vercel or `x-real-ip` behind the Nginx template. Without it any known proxy header is read, which is only safe behind a header-stripping proxy. |
-| `DIRECT_DATABASE_URL`                     | Direct connection for migrations when the application uses a pooled endpoint.                                                                                                                                                 |
-| `IGNORE_IP`                               | Comma-separated IP addresses or CIDR ranges to drop from collection.                                                                                                                                                          |
-| `OWNER_MARK`, `OWNER_COOKIE_DOMAIN`       | Secret marker for your own browsers and the cookie domain shared between the dashboard and the tracked site.                                                                                                                 |
-| `CRON_SECRET`                             | Bearer secret for the replay-cleanup endpoint.                                                                                                                                                                                |
-| `REPLAY_RETENTION_DAYS`                   | Days to keep unsaved replays; default `14`.                                                                                                                                                                                  |
-| `REPLAY_STORE_URL`, `REPLAY_STORE_SECRET` | Replay Worker endpoint and bearer secret for Cloudflare R2; set both or neither.                                                                                                                                              |
-| `BUILD_GEO`                               | Set to `1` to download the GeoLite2 databases during Vercel builds.                                                                                                                                                           |
-| `MAXMIND_LICENSE_KEY`                     | MaxMind download key; without it the build uses a public mirror.                                                                                                                                                             |
+| Variable                                  | Required               | Purpose                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                            | Yes                    | PostgreSQL connection used by the application.                                                                                                                                                                                                                                                                               |
+| `APP_SECRET`                              | Yes                    | Random secret for signing tokens and hashing visitor sessions (`openssl rand -hex 32`). A production build refuses to run without it. Changing it signs everyone out and starts every visitor as new.                                                                                                                        |
+| `TWO_FACTOR_ENCRYPTION_KEY`               | For two-factor sign-in | 64 hex characters for encrypting two-factor secrets. Keep it stable; changing it invalidates enrolled authenticators.                                                                                                                                                                                                        |
+| `CLIENT_IP_HEADER`                        | Recommended            | The one proxy header that carries the visitor's address, such as `x-real-ip` behind the Nginx template. On Vercel it defaults to `x-real-ip`. Without it any known proxy header is read, location headers are ignored and sign-in attempts are limited per username only; that is safe only behind a header-stripping proxy. |
+| `DIRECT_DATABASE_URL`                     | No                     | Direct connection for migrations when the application uses a pooled endpoint.                                                                                                                                                                                                                                                |
+| `IGNORE_IP`                               | No                     | Comma-separated IP addresses or CIDR ranges to drop from collection.                                                                                                                                                                                                                                                         |
+| `OWNER_MARK`, `OWNER_COOKIE_DOMAIN`       | No                     | Secret marker for your own browsers and the cookie domain shared between the dashboard and the tracked site.                                                                                                                                                                                                                 |
+| `CRON_SECRET`                             | With the cleanup job   | Bearer secret for the replay-cleanup endpoint.                                                                                                                                                                                                                                                                               |
+| `REPLAY_RETENTION_DAYS`                   | No                     | Days to keep unsaved replays; default `14`.                                                                                                                                                                                                                                                                                  |
+| `REPLAY_STORE_URL`, `REPLAY_STORE_SECRET` | No                     | Replay Worker endpoint and bearer secret for Cloudflare R2; set both or neither.                                                                                                                                                                                                                                             |
+| `BUILD_GEO`                               | On Vercel              | Set to `1` to download the GeoLite2 databases during Vercel builds.                                                                                                                                                                                                                                                          |
+| `MAXMIND_LICENSE_KEY`                     | No                     | MaxMind download key; without it the build uses a public mirror.                                                                                                                                                                                                                                                             |
+
+Advanced settings, all optional:
+
+| Variable                                               | Purpose                                                                                                                           |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `REPLAY_COUNTRIES`                                     | Comma-separated ISO country codes whose visitors may be recorded; default `US,CN,HK,SG`, `*` records every country.               |
+| `REPLAY_MAX_CHUNKS_PER_VISIT`                          | Replay chunks stored per visit before the recorder is refused; default `600`.                                                     |
+| `HEATMAP_RETENTION_DAYS`                               | Days to keep heatmap points; unset keeps them indefinitely. Applied by the cleanup job.                                           |
+| `NEXT_PUBLIC_PROJECT_ORDER`                            | Comma-separated tags listed first in the Projects tabs, in that order, such as `home,research,hobbies`; read at build time.       |
+| `DATABASE_REPLICA_URL`                                 | Read replica for report queries.                                                                                                  |
+| `SALT_ROTATION`                                        | How often the session salt rotates: `month` (default), `week` or `day`. A shorter period counts returning visitors as new sooner. |
+| `REMOVE_TRAILING_SLASH`                                | Set to strip a trailing slash from collected URLs.                                                                                |
+| `DISABLE_BOT_CHECK`                                    | Set to record visits from user agents recognised as bots.                                                                         |
+| `CORS_MAX_AGE`                                         | Seconds browsers cache the collection endpoints' CORS preflight; default `86400`.                                                 |
+| `DEFAULT_LOCALE`                                       | Dashboard language before a user chooses one, such as `zh-CN`.                                                                    |
+| `USE_UUIDV7`                                           | Set to generate time-ordered UUIDv7 identifiers.                                                                                  |
+| `GEOLITE_DB_PATH`, `GEOLITE_ASN_DB_PATH`               | Paths to your own GeoLite2-City and GeoLite2-ASN databases.                                                                       |
+| `GEO_DATABASE_URL`, `GEO_ASN_DATABASE_URL`             | Download URLs for the GeoLite2 databases at build time.                                                                           |
+| `SKIP_BUILD_GEO`, `SKIP_DB_CHECK`, `SKIP_DB_MIGRATION` | Skip the GeoLite2 download, the database check or the migrations during `pnpm build`.                                             |
+| `LOG_QUERY`                                            | Set to log every database query; for debugging only.                                                                              |
 
 ## Deploy
 
-`pnpm build` generates the Prisma client and browser scripts, **applies database migrations**, downloads the GeoLite2 databases and builds the application; `pnpm start` serves it. Back up the database before a production build: an application rollback does not undo migrations.
+`pnpm build` generates the Prisma client and browser scripts, **applies database migrations**, downloads the GeoLite2 databases and builds the application; `pnpm start` serves it. Back up the database before a production build: an application rollback does not undo migrations. [Releases](https://github.com/Friedrich-M/opentracker/releases) list what each version changes.
+
+**Migrating from Umami.** OpenTracker runs on an Umami database, but its migrations permanently delete what it removed: boards, links, pixels, teams (team websites pass to the team owner), revenue, their share links and their events. Back up first and try the migration on a copy.
 
 - **Linux server.** The [server guide](docs/deployment.md#linux-server) walks through PostgreSQL, a protected environment file, an unprivileged systemd service, Nginx with HTTPS, the replay-cleanup timer, backups and upgrades, with templates in [deploy/](deploy/).
-- **Vercel.** Link your own project, set the variables above and let the checked-in cron run the cleanup; see [the Vercel section](docs/deployment.md#vercel).
+- **Vercel.** Import the repository as a project, add a PostgreSQL database, set `DATABASE_URL`, `APP_SECRET`, `TWO_FACTOR_ENCRYPTION_KEY`, `BUILD_GEO=1` and `CRON_SECRET`, then deploy; the checked-in cron runs the cleanup. See [the Vercel section](docs/deployment.md#vercel).
 - **Cloudflare R2 for replays.** Deploy the Worker in [workers/replay-store/](workers/replay-store/) and point the application at it; see [optional R2 storage](docs/deployment.md#optional-cloudflare-r2-replay-storage).
 
 ## Data and privacy
 
 OpenTracker stores visitor IP addresses, network information, URLs, referrers, labels and replay content, and does **not** anonymise everything it collects. Replays mask input fields; the strict mask level also masks page text. Review the recorder settings and your pages before enabling recording.
 
-Replays are kept only for visitors located in the US, mainland China, Hong Kong and Singapore, plus local addresses for development; heatmaps have no such filter. Saved recordings are retained indefinitely and the retention job touches no other table.
+By default replays are kept only for visitors located in the US, mainland China, Hong Kong and Singapore (`REPLAY_COUNTRIES` changes the list), plus local addresses in development or behind a trusted proxy header; heatmaps have no such filter. Saved recordings are retained indefinitely; heatmap points are kept until `HEATMAP_RETENTION_DAYS` is set. Share links never show visitor addresses or network organisations.
 
 Page-view collection sets no cookie. Dashboard sign-in and internal-visit marking use browser storage and cookies. The application can contact geolocation, map-tile, favicon and replay-storage services; [docs/architecture.md](docs/architecture.md#external-services-and-repository-boundary) lists them. Operators are responsible for collection, consent, access and retention on their deployments.
 

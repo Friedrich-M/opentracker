@@ -3,12 +3,14 @@ import { checkAuth } from '@/lib/auth';
 import { DEFAULT_PAGE_SIZE, FILTER_COLUMNS, OPERATORS } from '@/lib/constants';
 import { getAllowedUnits, getMinimumUnit, maxDate, parseDateRange } from '@/lib/date';
 import { fetchWebsite } from '@/lib/load';
+import { isNetworkColumn } from '@/lib/network';
 import {
   filtersArrayToObject,
   parseSessionPropertyFilters,
   parseUniversalEventPropertyFilters,
 } from '@/lib/params';
 import { badRequest, unauthorized } from '@/lib/response';
+import { allowShareFilter, excludeShareFilterParam } from '@/lib/share';
 import type { QueryFilters } from '@/lib/types';
 import { getWebsiteSegment } from '@/queries/prisma';
 
@@ -63,7 +65,36 @@ export async function parseRequest(
     delete query.includeInternal;
   }
 
+  // Visitor network data is for signed-in users (AGENTS.md): a share link can
+  // neither list it as a metric (?type=org) nor filter or search on it (org,
+  // org1, …). A share whose owner turned filters off takes none at all,
+  // whatever its URL says — the switch is enforced here, not only in the UI.
+  if (auth && !auth.user && query) {
+    if (isNetworkColumn(query.type) && !error) {
+      error = () => unauthorized();
+    }
+
+    const filtersAllowed = allowShareFilter(auth.shareToken?.parameters);
+
+    for (const key of Object.keys(query)) {
+      if (isNetworkColumn(key) || (!filtersAllowed && isFilterParam(key))) {
+        delete query[key];
+      }
+    }
+  }
+
   return { url, query, body, auth, error };
+}
+
+// A query parameter that narrows the data: a column filter, a property
+// filter, a saved segment or cohort, or a search. `eventType` is listed as a
+// filter column but is the view's own Views/Events switch, so it stays.
+function isFilterParam(key: string) {
+  if (key === 'eventType') {
+    return false;
+  }
+
+  return excludeShareFilterParam(key) || /^(pf_|epf\d+$|spf\d+$)/.test(key) || key === 'search';
 }
 
 async function getJsonBody(request: Request) {

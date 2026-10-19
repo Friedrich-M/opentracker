@@ -97,3 +97,33 @@ test('POST returns a configuration error instead of partial auth when 2FA is ena
   });
   expect(response.status).toBe(503);
 });
+
+test('POST refuses further attempts with 429 and Retry-After after ten failures', async () => {
+  vi.stubEnv('CLIENT_IP_HEADER', 'x-real-ip');
+  mocks.parseRequest.mockResolvedValue({
+    body: { username: 'mallory', password: 'wrong' },
+    error: undefined,
+  });
+  mocks.checkPassword.mockReturnValue(false);
+  const attempt = () =>
+    POST(
+      new Request('http://localhost/api/auth/login', {
+        method: 'POST',
+        headers: { 'x-real-ip': '198.51.100.30' },
+      }),
+    );
+
+  for (let i = 0; i < 10; i++) {
+    expect((await attempt()).status).toBe(401);
+  }
+
+  const response = await attempt();
+
+  expect(response.status).toBe(429);
+  expect(Number(response.headers.get('retry-after'))).toBeGreaterThan(0);
+  await expect(response.json()).resolves.toMatchObject({
+    error: { code: 'too-many-login-attempts' },
+  });
+  expect(mocks.getUserByUsername).toHaveBeenCalledTimes(10);
+  vi.unstubAllEnvs();
+});

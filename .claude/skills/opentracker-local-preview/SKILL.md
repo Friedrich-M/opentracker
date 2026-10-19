@@ -5,7 +5,7 @@ description: Run the OpenTracker dashboard locally against a throwaway PostgreSQ
 
 # Local preview
 
-Nothing here touches production; never point these steps at the Neon database or use the owner's password. Use `npx --yes pnpm@12.3.4` if pnpm is not installed.
+Nothing here touches production; never point these steps at a hosted database or use a real account's password. Use `npx --yes pnpm@12.3.4` if pnpm is not installed.
 
 ## 0. A source-only copy outside cloud sync
 
@@ -23,7 +23,7 @@ pnpm check:db                    # applies migrations; the first seeds the admin
 pnpm db:seed --days 30   # two demo websites with ~15k sessions
 ```
 
-- `pnpm db:local` starts embedded PostgreSQL in `.local-db/` (git-ignored), in UTC like Neon. Delete `.local-db/` for an empty database.
+- `pnpm db:local` starts embedded PostgreSQL in `.local-db/` (git-ignored), in UTC like hosted databases. Delete `.local-db/` for an empty database.
 - If it fails with `Library not loaded: libicudata`, the platform package's postinstall did not run: `pnpm rebuild @embedded-postgres/<platform>`.
 - Seeded sessions have no `org`/`ip`; set some by SQL if the Organizations panel or Visitor Activity needs data, and say in your report that the values are fake. The visitor map needs a public IP the GeoLite database knows (e.g. `8.8.8.8`); documentation ranges such as 198.51.100.x have none.
 - Seeded events have no `tag`; set one by SQL to see the project tabs.
@@ -63,7 +63,7 @@ curl -X POST localhost:3000/api/send -H 'content-type: application/json' \
   -d '{"type":"event","payload":{"website":"<id>","hostname":"example.com","url":"/"}}'
 ```
 
-Add `"internal":true`, or use `"hostname":"localhost:8000"`, to produce an internal visit. Stats endpoints round ranges to whole units, so query a window of a day or more around the events.
+For an internal visit, use `"hostname":"localhost:8000"` and add `-H 'origin: http://localhost:8000'`; a local hostname alone is not enough, and `"internal"` in the payload is ignored. Stats endpoints round ranges to whole units, so query a window of a day or more around the events.
 
 ## 5. Clean up
 

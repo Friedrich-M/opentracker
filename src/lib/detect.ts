@@ -91,11 +91,14 @@ export async function getLocation(ip: string = '', headers: Headers, skipHeaders
     return null;
   }
 
-  if (!skipHeaders) {
-    const trusted = getTrustedIpHeader();
+  // A provider's location headers are believed only when its IP header is the
+  // trusted one: without CLIENT_IP_HEADER a client could send cf-ipcountry
+  // itself, so the location comes from the GeoLite database instead.
+  const trusted = getTrustedIpHeader();
 
+  if (!skipHeaders && trusted) {
     for (const provider of PROVIDER_HEADERS) {
-      if (trusted && !provider.ipHeaders.includes(trusted)) {
+      if (!provider.ipHeaders.includes(trusted)) {
         continue;
       }
 
@@ -114,13 +117,18 @@ export async function getLocation(ip: string = '', headers: Headers, skipHeaders
     }
   }
 
-  // Database lookup
+  // Database lookup. Without the database (SKIP_BUILD_GEO) the visit is
+  // still collected, with no location, rather than failing the request.
   if (!globalThis[MAXMIND]) {
     const dir = path.join(process.cwd(), 'geo');
 
-    globalThis[MAXMIND] = await maxmind.open(
-      process.env.GEOLITE_DB_PATH || path.resolve(dir, 'GeoLite2-City.mmdb'),
-    );
+    try {
+      globalThis[MAXMIND] = await maxmind.open(
+        process.env.GEOLITE_DB_PATH || path.resolve(dir, 'GeoLite2-City.mmdb'),
+      );
+    } catch {
+      return undefined;
+    }
   }
 
   const result = globalThis[MAXMIND]?.get(cleanIp);

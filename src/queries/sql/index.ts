@@ -32,6 +32,7 @@ export * from './pageviews/getPageviewExpandedMetrics';
 export * from './pageviews/getPageviewMetrics';
 export * from './pageviews/getPageviewStats';
 export * from './performance/getPerformanceStats';
+export * from './replays/countReplayChunks';
 export * from './replays/getReplayChunks';
 export * from './replays/getSessionReplays';
 export * from './replays/saveRecording';

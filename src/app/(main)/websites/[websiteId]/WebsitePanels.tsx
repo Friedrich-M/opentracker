@@ -1,7 +1,7 @@
 import { Grid, Heading, Row, Tab, TabList, TabPanel, Tabs } from '@umami/react-zen';
 import { GridRow } from '@/components/common/GridRow';
 import { Panel } from '@/components/common/Panel';
-import { useMessages, useMobile } from '@/components/hooks';
+import { useMessages, useMobile, useShare } from '@/components/hooks';
 import { MetricsTable } from '@/components/metrics/MetricsTable';
 import { WeeklyTraffic } from '@/components/metrics/WeeklyTraffic';
 import { WorldMap } from '@/components/metrics/WorldMap';
@@ -17,16 +17,21 @@ export function WebsitePanels({ websiteId }: { websiteId: string }) {
   };
   const rowProps = { minHeight: '570px' };
   const { isMobile } = useMobile();
+  // Visitor network data is for signed-in users: a share link shows no
+  // organizations (the API refuses them too).
+  const share = useShare();
 
   return (
     <Grid className="frame-stack">
-      <GridRow layout="two" {...rowProps}>
-        <Panel>
-          {/* Who is reading: the network each visit came from (GeoLite2-ASN). */}
-          <Heading size="2xl">{t(labels.organizations)}</Heading>
-          <Row border="bottom" marginBottom="4" />
-          <MetricsTable type="org" title={t(labels.org)} {...tableProps} />
-        </Panel>
+      <GridRow layout={share ? 'one' : 'two'} {...rowProps}>
+        {!share && (
+          <Panel>
+            {/* Who is reading: the network each visit came from (GeoLite2-ASN). */}
+            <Heading size="2xl">{t(labels.organizations)}</Heading>
+            <Row border="bottom" marginBottom="4" />
+            <MetricsTable type="org" title={t(labels.org)} {...tableProps} />
+          </Panel>
+        )}
         <Panel>
           <Heading size="2xl">{t(labels.pages)}</Heading>
           <Tabs>

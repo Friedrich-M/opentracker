@@ -1,13 +1,18 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { getRetentionDays } from '@/lib/cron';
-import { deleteExpiredReplays } from '@/queries/prisma';
+import { deleteExpiredHeatmapEvents, deleteExpiredReplays } from '@/queries/prisma';
 import { GET } from './route';
 
-vi.mock('@/queries/prisma', () => ({ deleteExpiredReplays: vi.fn() }));
+vi.mock('@/queries/prisma', () => ({
+  deleteExpiredReplays: vi.fn(),
+  deleteExpiredHeatmapEvents: vi.fn(),
+}));
 
 beforeEach(() => {
   vi.mocked(deleteExpiredReplays).mockReset();
   vi.mocked(deleteExpiredReplays).mockResolvedValue(3);
+  vi.mocked(deleteExpiredHeatmapEvents).mockReset();
+  vi.mocked(deleteExpiredHeatmapEvents).mockResolvedValue(5);
 });
 
 afterEach(() => {
@@ -53,4 +58,17 @@ test('retention defaults to 14 days', () => {
   expect(getRetentionDays()).toBe(14);
   vi.stubEnv('REPLAY_RETENTION_DAYS', '30');
   expect(getRetentionDays()).toBe(30);
+});
+
+test('keeps heatmap events unless HEATMAP_RETENTION_DAYS is set', async () => {
+  vi.stubEnv('CRON_SECRET', 'cron-secret');
+  vi.stubEnv('HEATMAP_RETENTION_DAYS', '');
+
+  expect(await (await call('Bearer cron-secret')).json()).toMatchObject({ heatmapDeleted: 0 });
+  expect(deleteExpiredHeatmapEvents).not.toHaveBeenCalled();
+
+  vi.stubEnv('HEATMAP_RETENTION_DAYS', '90');
+  expect(await (await call('Bearer cron-secret')).json()).toMatchObject({ heatmapDeleted: 5 });
+  const before = vi.mocked(deleteExpiredHeatmapEvents).mock.calls[0][0];
+  expect(Math.round((Date.now() - before.getTime()) / 86400000)).toBe(90);
 });

@@ -25,11 +25,14 @@ const operation1 = defineOperation({
                 deleted: {
                   type: 'number',
                 },
+                heatmapDeleted: {
+                  type: 'number',
+                },
                 before: {
                   type: 'string',
                 },
               },
-              required: ['deleted', 'before'],
+              required: ['deleted', 'heatmapDeleted', 'before'],
             },
           },
         },

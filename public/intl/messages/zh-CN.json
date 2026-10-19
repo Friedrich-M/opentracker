@@ -487,6 +487,7 @@
     "unmark-my-browser": "要取消标记，在网站地址后加上 ?tracker=reader 打开一次。",
     "owner-mark-unset": "需要先在服务器上设置 OWNER_MARK，才能标记浏览器。",
     "this-browser-marked": "这个浏览器已标记为你自己的：它访问网站的记录默认隐藏。",
-    "this-browser-not-marked": "这个浏览器还没有标记。刷新本页，或打开下面任一链接。"
+    "this-browser-not-marked": "这个浏览器还没有标记。刷新本页，或打开下面任一链接。",
+    "too-many-login-attempts": "登录失败次数过多，请过几分钟再试。"
   }
 }

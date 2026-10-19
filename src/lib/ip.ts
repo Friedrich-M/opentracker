@@ -73,12 +73,19 @@ function parseHeaderValue(header: string, value: string) {
 
 /**
  * The one proxy header the operator trusts for the visitor's address
- * (CLIENT_IP_HEADER, docs/deployment.md), lower-cased; undefined when unset.
- * Without it every header below is read, which is only safe behind a proxy
- * that strips the ones it does not set itself.
+ * (CLIENT_IP_HEADER, docs/deployment.md), lower-cased. On Vercel, which sets
+ * x-real-ip itself, that is the default. Undefined otherwise: every header
+ * below is then read, which is only safe behind a proxy that strips the ones
+ * it does not set itself, and no location header is trusted (detect.ts).
  */
 export function getTrustedIpHeader() {
-  return process.env.CLIENT_IP_HEADER?.trim().toLowerCase() || undefined;
+  const header = process.env.CLIENT_IP_HEADER?.trim().toLowerCase();
+
+  if (header) {
+    return header;
+  }
+
+  return process.env.VERCEL ? 'x-real-ip' : undefined;
 }
 
 export function getIpAddress(headers: Headers) {

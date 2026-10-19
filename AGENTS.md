@@ -26,7 +26,7 @@ OpenTracker is a self-hosted analytics application derived from Umami. Keep it u
 - Visitor network data is for authenticated users only. Share-reachable routes must remove it with `withoutNetwork` and must not search on it.
 - Collection payload overrides for IP, user agent, browser, OS and device are trusted only for authenticated senders.
 - Preserve token expiry and password-fingerprint validation; a share token must be checked against its current share record on every request.
-- Replay collection is limited to the US, mainland China, Hong Kong and Singapore, with the existing local-development exception (owner, 2026-10-16). Heatmaps are not restricted by this rule.
+- Replay collection is limited by default to the US, mainland China, Hong Kong and Singapore, with the local-development exception (owner, 2026-10-16); operators change the list with `REPLAY_COUNTRIES`, so keep that default. Heatmaps are not restricted by this rule.
 - Keep per-page tags attached to replay chunks so project views never expose another project’s pages from the same visit.
 - The product name is OpenTracker. Existing `tracker` browser APIs, script attributes, cookies/storage keys, headers and query parameters are integration contracts; renaming the product does not rename those contracts.
 
@@ -44,7 +44,7 @@ OpenTracker is a self-hosted analytics application derived from Umami. Keep it u
 
 ## Verification
 
-- Run the checks documented in `docs/development.md`; the CI workflow is the executable source for its gates.
+- Run the checks documented in `docs/development.md`; the CI workflow is the executable source for its gates. Without a database, prefix commands with a placeholder: `DATABASE_URL=postgresql://x:x@localhost/x pnpm verify`, `pnpm check:quality`, or one file with `pnpm vitest run src/lib/request.test.ts`.
 - A unit-test pass does not verify SQL migrations, a production build, browser layout or production storage.
 - Verify UI changes in both themes, both languages and at phone width using synthetic data.
 - For query or schema changes, verify against a disposable PostgreSQL database; never sample production rows to populate fixtures.

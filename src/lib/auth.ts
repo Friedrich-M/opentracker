@@ -19,6 +19,7 @@ import { ensureArray } from '@/lib/utils';
 import { getApiKeyByHash, updateApiKeyLastUsed } from '@/queries/prisma/apiKey';
 import { getShare } from '@/queries/prisma/share';
 import { getUser } from '@/queries/prisma/user';
+import { getWebsite } from '@/queries/prisma/website';
 
 const log = debug('tracker:auth');
 
@@ -84,7 +85,7 @@ export async function checkAuth(request: Request) {
     return null;
   }
 
-  const shareToken = await parseShareToken(request);
+  let shareToken = await parseShareToken(request);
 
   let user = null;
   const { userId } = payload || {};
@@ -96,6 +97,19 @@ export async function checkAuth(request: Request) {
     // under (auth/login, 2fa/verify); reject tokens without one or from
     // before a password change.
     if (user && (!payload.pwd || hash(user.password) !== payload.pwd)) {
+      user = null;
+    }
+  }
+
+  // A signed-in user on a share page sends both tokens. Never combine them:
+  // a user who owns the shared website (or an admin) keeps full access, and
+  // anyone else sees exactly what the share link shows, with no network data.
+  if (user && shareToken) {
+    const website = await getWebsite(shareToken.websiteId);
+
+    if (user.role === ROLES.admin || (!!website?.userId && website.userId === user.id)) {
+      shareToken = null;
+    } else {
       user = null;
     }
   }

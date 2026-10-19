@@ -135,7 +135,11 @@ sudo systemctl start opentracker-cleanup.service
 sudo systemctl list-timers opentracker-cleanup.timer
 ```
 
-This timer does not delete saved replays or all visitor analytics. Plan retention and backups for the other tables separately.
+This timer does not delete saved replays or other visitor analytics; it deletes heatmap points only when `HEATMAP_RETENTION_DAYS` is set. Plan retention and backups for the other tables separately.
+
+## Abuse protection
+
+The collection endpoints (`/api/send`, `/api/record`) accept anonymous requests by design. Sign-in failures are limited per instance, and a visit's replay stops after `REPLAY_MAX_CHUNKS_PER_VISIT` chunks, but nothing caps request volume: put a rate limit or WAF rule in front of the application (Nginx `limit_req`, Cloudflare or Vercel firewall rules), and watch database growth.
 
 ## Verify the deployment
 
@@ -153,12 +157,23 @@ An application rollback restores the prior commit’s code and rebuilds it; it d
 
 ## Vercel
 
-Link your own project with `vercel link`; `.vercel/` stays local. Set the README’s environment variables in the provider settings, including `BUILD_GEO=1`, `CRON_SECRET` and `CLIENT_IP_HEADER=x-forwarded-for`. Vercel overwrites `x-forwarded-for` with the client address; the setting keeps the application from reading a CDN header the visitor sent instead. The checked-in configuration schedules daily replay cleanup. Use a pooled application URL and a direct migration URL when required by the database provider.
+1. Import your fork as a Vercel project, or link a local checkout with `vercel link` (`.vercel/` stays local).
+2. Add a PostgreSQL 14+ database and set `DATABASE_URL`, plus `DIRECT_DATABASE_URL` when the provider gives a pooled application URL.
+3. Set `APP_SECRET`, `TWO_FACTOR_ENCRYPTION_KEY` and `CRON_SECRET` to fresh values (`openssl rand -hex 32`), and `BUILD_GEO=1`.
+4. Deploy. The build applies migrations; the checked-in configuration schedules daily replay cleanup.
+5. Sign in as `admin` / `umami` and change the password at once.
+
+On Vercel the visitor's address is read from `x-real-ip`, which Vercel sets itself, and location from Vercel's own headers; `CLIENT_IP_HEADER` overrides the header.
 
 `sh scripts/deploy/vercel.sh` uploads an archive of the committed tree using the local project link. It refuses a dirty tree and checks staged source before upload. Confirm the intended CLI account and project before invoking it. A Git push deploys only if you configure the provider integration.
 
 ## Optional Cloudflare R2 replay storage
 
-Without external storage, replay bodies occupy PostgreSQL. To use R2, create a bucket in your own account and adjust the default names in `workers/replay-store/wrangler.toml`. From that directory, deploy with `npx wrangler deploy`, then set the secret with `npx wrangler secret put REPLAY_STORE_SECRET`. Set `REPLAY_STORE_URL` and the matching `REPLAY_STORE_SECRET` on the application; both must be configured together.
+Without external storage, replay bodies occupy PostgreSQL. To use R2:
+
+1. In `workers/replay-store/`, create a bucket with `npx wrangler r2 bucket create <name>` and set `bucket_name` in `wrangler.toml` to it (adjust the Worker `name` too if you like).
+2. Deploy with `npx wrangler deploy`; it prints the Worker's URL.
+3. Generate a secret (`openssl rand -hex 32`) and store it with `npx wrangler secret put REPLAY_STORE_SECRET`.
+4. Set `REPLAY_STORE_URL` to the Worker's URL and `REPLAY_STORE_SECRET` to the same secret on the application; both must be configured together.
 
 Names are not access controls. Never commit account tokens, real replay objects or provider state. Existing database-backed replay bodies remain readable; deploying the Worker does not migrate them automatically. Include both the database metadata and external objects in your backup/recovery plan.

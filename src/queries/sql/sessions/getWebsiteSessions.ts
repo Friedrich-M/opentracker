@@ -79,11 +79,20 @@ async function relationalQuery(
       ${
         includeNetwork
           ? `,
-      (select count(*) from session s2 where s2.ip = session.ip) as "ipSessions",
+      -- Within this website's owner's websites only: another account's
+      -- visitors from the same address are not this owner's to count.
+      (select count(*) from session s2
+        join website w2 on w2.website_id = s2.website_id
+        where s2.ip = session.ip
+          and w2.user_id = (select user_id from website where website_id = {{websiteId::uuid}})
+      ) as "ipSessions",
       (select count(*) from website_event e2
         join session s3 on s3.session_id = e2.session_id
+        join website w3 on w3.website_id = e2.website_id
         where s3.ip = session.ip and e2.event_type = ${EVENT_TYPE.pageView}
-          and e2.internal = false) as "ipViews",
+          and e2.internal = false
+          and w3.user_id = (select user_id from website where website_id = {{websiteId::uuid}})
+      ) as "ipViews",
       (select vl.name from visitor_label vl
         where vl.ip = session.ip and vl.user_id = {{userId::uuid}}) as "label"`
           : ''

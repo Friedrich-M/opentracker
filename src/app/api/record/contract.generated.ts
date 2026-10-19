@@ -33,6 +33,11 @@ const operation1 = defineOperation({
                         type: 'string',
                         format: 'uuid',
                       },
+                      tag: {
+                        type: 'string',
+                        maxLength: 50,
+                        description: 'Tag attached to the tracked activity.',
+                      },
                       events: {
                         type: 'array',
                         items: {},

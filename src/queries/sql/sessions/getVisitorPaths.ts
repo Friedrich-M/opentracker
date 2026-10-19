@@ -45,6 +45,10 @@ async function relationalQuery(
   const { rawQuery } = prisma;
   const { userId } = options;
 
+  // The session itself only when it belongs to this website: a session id from
+  // someone else's website must not pull in its events.
+  const thisSession = `select session_id from session
+       where session_id = {{sessionId::uuid}} and website_id = {{websiteId::uuid}}`;
   const sessionsQuery = userId
     ? `select s.session_id from session s
        join website w on w.website_id = s.website_id
@@ -52,8 +56,8 @@ async function relationalQuery(
        where s.ip = (select ip from session
                      where session_id = {{sessionId::uuid}} and website_id = {{websiteId::uuid}})
        union
-       select {{sessionId::uuid}}`
-    : `select {{sessionId::uuid}}`;
+       ${thisSession}`
+    : thisSession;
 
   const rows = await rawQuery(
     `
@@ -78,7 +82,12 @@ async function relationalQuery(
       join website w on w.website_id = e.website_id
       where e.session_id in (${sessionsQuery})
         and e.event_type in (${EVENT_TYPE.pageView}, ${EVENT_TYPE.customEvent})
-        ${userId ? '' : 'and e.website_id = {{websiteId::uuid}}'}
+        ${
+          userId
+            ? // Across websites only within this website's owner's own.
+              `and w.user_id = (select user_id from website where website_id = {{websiteId::uuid}})`
+            : 'and e.website_id = {{websiteId::uuid}}'
+        }
       order by e.created_at desc
       limit ${MAX_EVENTS}
     ) t

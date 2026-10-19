@@ -448,6 +448,7 @@ export const messages: Record<string, string> = {
   visitorLog: 'message.visitor-log',
   eventLog: 'message.event-log',
   incorrectUsernamePassword: 'message.incorrect-username-password',
+  tooManyLoginAttempts: 'message.too-many-login-attempts',
   noEventData: 'message.no-event-data',
   unauthorized: 'message.unauthorized',
   badRequest: 'message.bad-request',

@@ -70,8 +70,13 @@ test('CSV export quotes cells that need it', () => {
   expect(row).toContain('https://example.com/?model=11380');
 });
 
-test('projects keep the site order and switch by the tag filter', () => {
-  expect(orderProjects(['hobbies', 'zeta', 'home', '', 'research', 'home'])).toEqual([
+test('projects follow the configured order and switch by the tag filter', () => {
+  const tags = ['hobbies', 'zeta', 'home', '', 'research', 'home'];
+
+  // Without NEXT_PUBLIC_PROJECT_ORDER: alphabetical, de-duplicated, no empties.
+  expect(orderProjects(tags, [])).toEqual(['hobbies', 'home', 'research', 'zeta']);
+  // With one: those first, in that order; the rest alphabetical.
+  expect(orderProjects(tags, ['home', 'research', 'hobbies'])).toEqual([
     'home',
     'research',
     'hobbies',
@@ -139,9 +144,9 @@ test('referrers and entry pages read as names', () => {
   expect(referrerLabel('https://www.youtube.com/')).toBe('youtube.com');
   expect(referrerLabel('github.com/example-org/project')).toBe('github.com/example-org/project');
   expect(pageLabel('/', 'Jane Doe | Example University', 'Home page')).toBe('Home page');
-  expect(
-    pageLabel('/papers/', 'Project — A Longer Description of the Work', 'Home page'),
-  ).toBe('Project');
+  expect(pageLabel('/papers/', 'Project — A Longer Description of the Work', 'Home page')).toBe(
+    'Project',
+  );
   expect(pageLabel('/gallery/', 'Gallery', 'Home page')).toBe('Gallery');
   expect(pageLabel('/x/', null, 'Home page')).toBe('/x/');
 });

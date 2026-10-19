@@ -1,5 +1,5 @@
 import { NavMenu } from '@/components/common/NavMenu';
-import { useMessages, useNavigation } from '@/components/hooks';
+import { useMessages, useNavigation, useShare } from '@/components/hooks';
 import {
   AppWindow,
   Building2,
@@ -43,7 +43,10 @@ export function WebsiteExpandedMenu({
     query: { view },
   } = useNavigation();
 
-  const filterExcluded = (item: { id: string }) => !excludedIds.includes(item.id);
+  // A share link shows no visitor network data, organizations included.
+  const share = useShare();
+  const filterExcluded = (item: { id: string }) =>
+    !excludedIds.includes(item.id) && !(share && item.id === 'org');
 
   const items = [
     {

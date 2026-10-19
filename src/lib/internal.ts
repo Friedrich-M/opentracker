@@ -56,10 +56,28 @@ export function isOwnerMark(mark?: string | null) {
 
 /**
  * A visit is internal when it comes from the owner's marked browser or from a
- * local preview. Internal visits are stored and hidden by default.
+ * local preview. Internal visits are stored and hidden by default. A local
+ * `hostname` alone is not enough: any script can send one to hide its visits.
+ * The request's Origin, which a browser sets and page script cannot change,
+ * must be local too.
  */
-export function isInternalVisit(payload: { owner?: string | null; hostname?: string | null }) {
-  return isOwnerMark(payload.owner) || isLocalHostname(payload.hostname);
+export function isInternalVisit(payload: {
+  owner?: string | null;
+  hostname?: string | null;
+  origin?: string | null;
+}) {
+  return (
+    isOwnerMark(payload.owner) ||
+    (isLocalHostname(payload.hostname) && isLocalHostname(getOriginHost(payload.origin)))
+  );
+}
+
+function getOriginHost(origin?: string | null) {
+  try {
+    return origin ? new URL(origin).host : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Cookie that carries the owner mark from the dashboard to the tracked site. */

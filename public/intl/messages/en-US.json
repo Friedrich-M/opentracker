@@ -487,6 +487,7 @@
     "unmark-my-browser": "To unmark a browser, open the same site with ?tracker=reader.",
     "owner-mark-unset": "Set OWNER_MARK on the server to enable browser marking.",
     "this-browser-marked": "This browser is marked as yours: its visits to the site are hidden by default.",
-    "this-browser-not-marked": "This browser is not marked yet. Reload this page, or open one of the links below."
+    "this-browser-not-marked": "This browser is not marked yet. Reload this page, or open one of the links below.",
+    "too-many-login-attempts": "Too many failed sign-ins. Try again in a few minutes."
   }
 }

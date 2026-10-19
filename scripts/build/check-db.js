@@ -5,8 +5,9 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import chalk from 'chalk';
 import { PrismaClient } from '../../generated/prisma/client.js';
 
-const MIN_VERSION = '9.4.0';
-const MIN_VERSION_NUM = 90400;
+// The oldest PostgreSQL release still supported upstream; CI runs 17.
+const MIN_VERSION = '14.0';
+const MIN_VERSION_NUM = 140000;
 
 if (process.env.SKIP_DB_CHECK) {
   console.log('Skipping database check.');

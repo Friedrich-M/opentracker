@@ -67,7 +67,16 @@ describe('isInternalVisit', () => {
   });
 
   test('local previews are internal without a mark', () => {
-    expect(isInternalVisit({ hostname: 'localhost:8000' })).toBe(true);
+    expect(isInternalVisit({ hostname: 'localhost:8000', origin: 'http://localhost:8000' })).toBe(
+      true,
+    );
+  });
+
+  // Any script can send a local hostname; the browser-set Origin must agree.
+  test('a local hostname from a public origin, or with no origin, is not internal', () => {
+    expect(isInternalVisit({ hostname: 'localhost', origin: 'https://example.com' })).toBe(false);
+    expect(isInternalVisit({ hostname: 'localhost' })).toBe(false);
+    expect(isInternalVisit({ hostname: 'localhost', origin: 'not a url' })).toBe(false);
   });
 
   test('ordinary readers are not internal', () => {

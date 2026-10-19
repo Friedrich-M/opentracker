@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { parseRequest } from '@/lib/request';
-import { json, unauthorized } from '@/lib/response';
+import { json, notFound, unauthorized } from '@/lib/response';
 import { canUpdateWebsite, canViewAuthenticatedWebsite } from '@/permissions';
 import {
   createReplaySaved,
   deleteReplaySaved,
   getReplaySaved,
+  hasReplayChunks,
 } from '@/queries/prisma/sessionReplay';
 
 export async function GET(
@@ -51,6 +52,11 @@ export async function POST(
   }
 
   if (body.isSaved) {
+    // Only a recording of this website can be kept from expiring.
+    if (!(await hasReplayChunks(websiteId, replayId))) {
+      return notFound();
+    }
+
     await createReplaySaved(websiteId, replayId, body.name ?? '');
   } else {
     await deleteReplaySaved(websiteId, replayId);
