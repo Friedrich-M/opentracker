@@ -71,6 +71,6 @@ Next.js App Router under `src/app/(main)/`, components from the Zen component li
 
 ## External services and repository boundary
 
-The geolocation build downloads GeoLite City/ASN (from a mirror by default, or MaxMind with a configured key). Runtime can call the configured replay Worker and perform reverse-DNS lookups. The dashboard browser requests map tiles and favicons; fonts are bundled. Account-specific endpoints and credentials are deployment configuration, not repository fixtures.
+The geolocation build downloads GeoLite City/ASN (from a mirror by default, or MaxMind with a configured key). Runtime can call the configured replay Worker and perform reverse-DNS lookups. The dashboard browser requests map tiles and favicons; its own fonts are bundled. A replay loads the recorded page's fonts, stylesheets and media from their own origins, which is why the Content-Security-Policy (`src/lib/csp.ts`) allows any HTTPS origin for those three and none for scripts. Account-specific endpoints and credentials are deployment configuration, not repository fixtures.
 
 Stored visitor data includes IPs, navigation and optional replay content. Keep it outside Git; see [repository data policy](repository-data.md). Local screenshots and diagnostics must use synthetic data and ignored output paths.
