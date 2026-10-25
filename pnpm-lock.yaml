@@ -260,8 +260,8 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
       zod:
-        specifier: ^4.6.2
-        version: 4.6.2
+        specifier: ^4.6.7
+        version: 4.6.7
       zustand:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.3.0)(immer@11.1.18)(react@19.3.0)(use-sync-external-store@1.6.0(react@19.3.0))
@@ -373,7 +373,7 @@ importers:
         version: 4.152.0(@types/node@26.5.1)
       zod-openapi:
         specifier: ^6.0.2
-        version: 6.0.2(zod@4.6.2)
+        version: 6.0.2(zod@4.6.7)
 
 packages:
 
@@ -6520,8 +6520,8 @@ packages:
     peerDependencies:
       zod: ^4.0.0
 
-  zod@4.6.2:
-    resolution: {integrity: sha512-lh5RCAGFa1Cm2hjtNwLQhSs/AsqdWnTQaBER9fEwN/88pSh7KOtJavtBx/0VlkN/uFd61SwYmljLMDAsHlvzBQ==}
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
   zustand@5.0.15:
     resolution: {integrity: sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==}
@@ -11053,7 +11053,7 @@ snapshots:
       typescript: 6.0.3
       unbash: 2.2.0
       yaml: 2.9.1
-      zod: 4.6.2
+      zod: 4.6.7
 
   lie@3.3.0:
     dependencies:
@@ -13046,11 +13046,11 @@ snapshots:
       grammex: 3.1.13
       graphmatch: 1.1.1
 
-  zod-openapi@6.0.2(zod@4.6.2):
+  zod-openapi@6.0.2(zod@4.6.7):
     dependencies:
-      zod: 4.6.2
+      zod: 4.6.7
 
-  zod@4.6.2: {}
+  zod@4.6.7: {}
 
   zustand@5.0.15(@types/react@19.3.0)(immer@11.1.18)(react@19.3.0)(use-sync-external-store@1.6.0(react@19.3.0)):
     optionalDependencies:
