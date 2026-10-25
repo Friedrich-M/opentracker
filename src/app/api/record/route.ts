@@ -107,6 +107,61 @@ async function getRequestBodySize(request: Request): Promise<number | null> {
   }
 }
 
+// The recorder gzips its bodies (Content-Encoding: gzip). The inflated body
+// keeps the same size cap, read in pieces so a small compressed body cannot
+// expand without bound. A body that arrives already inflated (a proxy that
+// decoded it but kept the header) lacks the gzip magic bytes and is read as is.
+async function getPlainRequest(request: Request): Promise<Request | 'too_large' | 'invalid'> {
+  if (!/\bgzip\b/i.test(request.headers.get('content-encoding') || '')) {
+    return request;
+  }
+
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  const headers = new Headers(request.headers);
+
+  headers.delete('content-encoding');
+  headers.delete('content-length');
+
+  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) {
+    return new Request(request.url, { method: request.method, headers, body: bytes });
+  }
+
+  const reader = (new Response(bytes).body as ReadableStream)
+    .pipeThrough(new DecompressionStream('gzip'))
+    .getReader();
+  const parts: Uint8Array[] = [];
+  let size = 0;
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      size += value.byteLength;
+
+      if (size > MAX_RECORD_REQUEST_BYTES) {
+        await reader.cancel();
+        return 'too_large';
+      }
+
+      parts.push(value);
+    }
+  } catch {
+    return 'invalid';
+  }
+
+  const plain = new Uint8Array(size);
+  let offset = 0;
+
+  for (const part of parts) {
+    plain.set(part, offset);
+    offset += part.byteLength;
+  }
+
+  return new Request(request.url, { method: request.method, headers, body: plain });
+}
+
 export function OPTIONS() {
   return corsPreflight();
 }
@@ -125,7 +180,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const { body, error } = await parseRequest(request, schema, { skipAuth: true });
+    const plainRequest = await getPlainRequest(request);
+
+    if (plainRequest === 'too_large') {
+      return withCorsHeaders(
+        payloadTooLarge({ reason: 'payload_too_large', maxBytes: MAX_RECORD_REQUEST_BYTES }),
+      );
+    }
+
+    if (plainRequest === 'invalid') {
+      return withCorsHeaders(badRequest({ message: 'Invalid compressed body.' }));
+    }
+
+    const { body, error } = await parseRequest(plainRequest, schema, { skipAuth: true });
 
     if (error) {
       return withCorsHeaders(error());

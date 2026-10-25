@@ -3,7 +3,7 @@ const DEFAULT_CORS_MAX_AGE = process.env.CORS_MAX_AGE || '86400';
 export function getApiCorsHeaders(headers: HeadersInit = {}) {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, x-tracker-cache',
+    'Access-Control-Allow-Headers': 'Content-Type, Content-Encoding, x-tracker-cache',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Max-Age': DEFAULT_CORS_MAX_AGE,
     ...headers,

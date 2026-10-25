@@ -251,3 +251,51 @@ describe('heatmap page paths', () => {
     ]);
   });
 });
+
+describe('gzipped bodies', () => {
+  const gzip = (text: string) =>
+    new Response(
+      (new Response(text).body as ReadableStream).pipeThrough(new CompressionStream('gzip')),
+    ).arrayBuffer();
+  const post = (body: BodyInit, headers: Record<string, string> = {}) =>
+    POST(new Request('http://localhost/api/record', { method: 'POST', body, headers }));
+
+  beforeEach(() => {
+    parseRequestMock.mockResolvedValue({
+      body: { type: 'record', payload: { website: WEBSITE, events: [] } },
+      error: undefined,
+    });
+  });
+
+  test('inflates a gzipped body before parsing it', async () => {
+    const text = JSON.stringify({ type: 'record', payload: { website: WEBSITE, events: [] } });
+
+    await post(await gzip(text), { 'content-encoding': 'gzip' });
+
+    const parsed = parseRequestMock.mock.calls[0][0] as Request;
+    expect(await parsed.text()).toBe(text);
+    expect(parsed.headers.get('content-encoding')).toBeNull();
+  });
+
+  test('reads a body a proxy already inflated as it is', async () => {
+    await post('{"type":"record"}', { 'content-encoding': 'gzip' });
+
+    expect(await (parseRequestMock.mock.calls[0][0] as Request).text()).toBe('{"type":"record"}');
+  });
+
+  test('refuses a body that inflates past the cap', async () => {
+    const response = await post(await gzip(' '.repeat(1_000_001)), { 'content-encoding': 'gzip' });
+
+    expect(response.status).toBe(413);
+    expect(parseRequestMock).not.toHaveBeenCalled();
+  });
+
+  test('refuses a corrupt gzip body', async () => {
+    const response = await post(new Uint8Array([0x1f, 0x8b, 1, 2, 3]), {
+      'content-encoding': 'gzip',
+    });
+
+    expect(response.status).toBe(400);
+    expect(parseRequestMock).not.toHaveBeenCalled();
+  });
+});
