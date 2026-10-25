@@ -90,7 +90,7 @@
     "react-simple-maps": "^3.0.0",
     "react-window": "^2.3.1",
     "rrweb": "^2.0.1",
-    "rrweb-player": "2.0.0-alpha.20",
+    "rrweb-player": "2.1.7",
     "serialize-error": "^13.0.1",
     "thenby": "^1.4.1",
     "ua-parser-js": "^1.0.41",
