@@ -7,7 +7,9 @@
 # in a temporary folder, then `wrangler deploy` uploads it with wrangler.jsonc.
 # The build applies migrations, so DATABASE_URL must be set in this shell;
 # NEXT_PUBLIC_* settings are read at build time too. Run-time secrets are
-# set once with `npx wrangler secret put NAME`.
+# set once with `npx wrangler secret put NAME`. An ignored wrangler.local.jsonc
+# (your Worker name, routes, bindings) replaces wrangler.jsonc in the build,
+# so instance settings need not be committed.
 set -eu
 
 if [ -n "$(git status --porcelain)" ]; then
@@ -27,6 +29,9 @@ PNPM="npx --yes pnpm@12.3.4"
 dir=$(mktemp -d)
 trap 'rm -rf "$dir"' EXIT
 git archive HEAD | tar -x -C "$dir"
+if [ -f wrangler.local.jsonc ]; then
+  cp wrangler.local.jsonc "$dir/wrangler.jsonc"
+fi
 cd "$dir"
 $PNPM install --frozen-lockfile
 $PNPM build:cloudflare

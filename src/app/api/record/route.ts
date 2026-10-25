@@ -99,9 +99,7 @@ async function getRequestBodySize(request: Request): Promise<number | null> {
   }
 
   try {
-    const text = await request.clone().text();
-
-    return new TextEncoder().encode(text).length;
+    return (await request.clone().arrayBuffer()).byteLength;
   } catch {
     return null;
   }
@@ -110,9 +108,10 @@ async function getRequestBodySize(request: Request): Promise<number | null> {
 // The recorder gzips its bodies (Content-Encoding: gzip). The inflated body
 // keeps the same size cap, read in pieces so a small compressed body cannot
 // expand without bound. A body that arrives already inflated (a proxy that
-// decoded it but kept the header) lacks the gzip magic bytes and is read as is.
+// decoded it but kept the header) lacks the gzip magic bytes and is read as
+// is. Any other encoding is passed on and fails to parse.
 async function getPlainRequest(request: Request): Promise<Request | 'too_large' | 'invalid'> {
-  if (!/\bgzip\b/i.test(request.headers.get('content-encoding') || '')) {
+  if (request.headers.get('content-encoding')?.trim().toLowerCase() !== 'gzip') {
     return request;
   }
 

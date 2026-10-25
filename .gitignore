@@ -19,6 +19,7 @@ package-lock.json
 /geo/
 /.open-next/
 /prisma/schema.workerd.prisma
+/wrangler.local.jsonc
 next-env.d.ts
 *.tsbuildinfo
 

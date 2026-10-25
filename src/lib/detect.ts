@@ -104,7 +104,8 @@ export async function getLocation(ip: string = '', headers: Headers, skipHeaders
 
   // On a Cloudflare Worker, `request.cf` has the region and city that the
   // cf-* headers carry only with a managed transform.
-  const cloudflareLocation = skipHeaders ? undefined : getCloudflareLocation();
+  const cloudflareLocation =
+    skipHeaders || !isConnectingIp(cleanIp, headers) ? undefined : getCloudflareLocation();
 
   if (cloudflareLocation) {
     return cloudflareLocation;
@@ -166,9 +167,16 @@ export async function getLocation(ip: string = '', headers: Headers, skipHeaders
   }
 }
 
-// On a Cloudflare Worker, `request.cf` locates the connecting client. Cloudflare
-// sets it, so unlike location headers it needs no trusted IP header; it says
-// nothing about an address sent in the payload (skipHeaders).
+// On a Cloudflare Worker, `request.cf` describes the connecting client, whose
+// address Cloudflare puts in cf-connecting-ip. Both are Cloudflare's, so unlike
+// location headers they need no trusted IP header, but they apply only to that
+// address: not to one sent in the payload (skipHeaders), nor to one read from
+// a client-sent header when CLIENT_IP_HEADER is unset. The GeoLite databases
+// do not exist on a Worker, so request.cf never competes with them.
+function isConnectingIp(ip: string, headers: Headers) {
+  return !!ip && ip === stripPort(headers.get('cf-connecting-ip'));
+}
+
 function getCloudflareLocation() {
   const cf = getCloudflareContext()?.cf;
 
@@ -275,7 +283,10 @@ export async function getClientInfo(request: Request, payload: Record<string, an
   const browser = payload?.browser ?? browserName(userAgent);
   const os = payload?.os ?? (detectOS(userAgent) as string);
   const device = payload?.device ?? getDevice(userAgent, payload?.screen);
-  const network = await getNetwork(ip, !payload?.ip);
+  const network = await getNetwork(
+    ip,
+    !payload?.ip && isConnectingIp(stripPort(ip) || '', request.headers),
+  );
 
   return {
     userAgent,

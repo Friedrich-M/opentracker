@@ -171,7 +171,7 @@ On Vercel the visitor's address is read from `x-real-ip`, which Vercel sets itse
 
 The app runs as one Worker through the OpenNext adapter (`wrangler.jsonc`, `open-next.config.ts`, entry `deploy/cloudflare/worker.js`). The Worker is about 7 MB compressed, over the free plan's 3 MB limit, so the account needs the Workers Paid plan. Data transfer is not billed.
 
-1. Sign in with `npx wrangler login` and set `name` in `wrangler.jsonc`; add your domain under `routes` (`custom_domain: true` for a domain in the same account).
+1. Sign in with `npx wrangler login`. Copy `wrangler.jsonc` to the ignored `wrangler.local.jsonc`, set `name` there and add your domain under `routes` (`custom_domain: true` needs the domain's DNS zone in the same Cloudflare account); the deploy script uses it instead of the committed file.
 2. Store run-time secrets with `npx wrangler secret put NAME`: `DATABASE_URL`, `APP_SECRET`, `TWO_FACTOR_ENCRYPTION_KEY` and `CRON_SECRET` (fresh values from `openssl rand -hex 32`), plus `REPLAY_STORE_URL` and `REPLAY_STORE_SECRET` with R2. Other settings go under `vars`.
 3. Export `DATABASE_URL` (and any `NEXT_PUBLIC_*` settings) in your shell and run `sh scripts/deploy/cloudflare.sh`. It builds `git archive HEAD` in a temporary folder, applies migrations and runs `wrangler deploy`; it refuses a dirty tree.
 4. Sign in as `admin` / `umami` and change the password at once.

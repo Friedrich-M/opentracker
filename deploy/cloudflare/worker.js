@@ -11,6 +11,14 @@ export default {
       headers: { authorization: `Bearer ${env.CRON_SECRET}` },
     });
 
-    ctx.waitUntil(openNext.fetch(request, env, ctx));
+    // A 401 means CRON_SECRET is missing or differs; log it rather than
+    // failing silently every day.
+    ctx.waitUntil(
+      openNext.fetch(request, env, ctx).then(response => {
+        if (!response.ok) {
+          console.error(`cleanup-replays cron: HTTP ${response.status}`);
+        }
+      }),
+    );
   },
 };

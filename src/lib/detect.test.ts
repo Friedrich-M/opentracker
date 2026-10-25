@@ -69,7 +69,7 @@ test('getLocation: ignores location headers without a trusted IP header', async 
   vi.stubEnv('GEOLITE_DB_PATH', '/nonexistent/GeoLite2-City.mmdb');
   const headers = new Headers({ 'cf-ipcountry': 'US', 'cf-ipcity': 'Los Angeles' });
 
-  delete globalThis['maxmind'];
+  delete globalThis.maxmind;
 
   // No trusted header: the client's cf-ipcountry is ignored, and without the
   // GeoLite database the visit has no location instead of failing.
@@ -197,12 +197,34 @@ test('getLocation: a Worker reads the location from request.cf', async () => {
   isLocalhost.default.mockResolvedValue(false as never);
 
   await withCloudflareCf({ country: 'SG', regionCode: '01', city: 'Singapore' }, async () => {
-    await expect(getLocation('192.0.2.10', new Headers(), false)).resolves.toEqual({
+    const headers = new Headers({ 'cf-connecting-ip': '192.0.2.10' });
+
+    await expect(getLocation('192.0.2.10', headers, false)).resolves.toEqual({
       country: 'SG',
       region: 'SG-01',
       city: 'Singapore',
     });
   });
+});
+
+test('getLocation: request.cf does not locate an address other than the connection', async () => {
+  const previous = process.env.GEOLITE_DB_PATH;
+  process.env.GEOLITE_DB_PATH = '/nonexistent/GeoLite2-City.mmdb';
+  delete globalThis.maxmind;
+  isLocalhost.default.mockResolvedValue(false as never);
+
+  // A spoofed x-forwarded-for read without CLIENT_IP_HEADER.
+  const headers = new Headers({ 'cf-connecting-ip': '198.51.100.7' });
+
+  await withCloudflareCf({ country: 'SG' }, async () => {
+    await expect(getLocation('192.0.2.10', headers, false)).resolves.toBeUndefined();
+  });
+
+  if (previous === undefined) {
+    delete process.env.GEOLITE_DB_PATH;
+  } else {
+    process.env.GEOLITE_DB_PATH = previous;
+  }
 });
 
 test('getLocation: request.cf does not locate an address sent in the payload', async () => {
@@ -252,4 +274,37 @@ test('getLocation: a Worker treats reserved ranges as local without probing sock
     }
     expect(isLocalhost.default).not.toHaveBeenCalled();
   });
+});
+
+test('getClientInfo: a Worker attaches request.cf network only to the connecting address', async () => {
+  const previous = process.env.GEOLITE_ASN_DB_PATH;
+  process.env.GEOLITE_ASN_DB_PATH = '/nonexistent/GeoLite2-ASN.mmdb';
+  delete globalThis['maxmind-asn'];
+  vi.stubEnv('CLIENT_IP_HEADER', '');
+  vi.stubEnv('GEOLITE_DB_PATH', '/nonexistent/GeoLite2-City.mmdb');
+  delete globalThis.maxmind;
+  const request = (headers: Record<string, string>) =>
+    new Request('http://localhost/api/send', { headers });
+
+  await withCloudflareCf({ country: 'SG', asn: 64500, asOrganization: 'EXAMPLE-NET' }, async () => {
+    const connection = await getClientInfo(request({ 'cf-connecting-ip': '192.0.2.10' }), {});
+    expect(connection).toMatchObject({ ip: '192.0.2.10', asn: 64500, country: 'SG' });
+
+    // Without CLIENT_IP_HEADER a client-sent true-client-ip wins the address
+    // lookup; it gets neither the connection's location nor its network.
+    const spoofed = await getClientInfo(
+      request({ 'true-client-ip': '198.51.100.7', 'cf-connecting-ip': '192.0.2.10' }),
+      {},
+    );
+    expect(spoofed).toMatchObject({ ip: '198.51.100.7', asn: null });
+    expect(spoofed.country).toBeFalsy();
+  });
+
+  vi.unstubAllEnvs();
+  delete globalThis['maxmind-asn'];
+  if (previous === undefined) {
+    delete process.env.GEOLITE_ASN_DB_PATH;
+  } else {
+    process.env.GEOLITE_ASN_DB_PATH = previous;
+  }
 });

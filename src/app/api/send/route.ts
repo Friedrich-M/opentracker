@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     const internal = isInternalVisit({ owner, hostname, origin: request.headers.get('origin') });
 
     // Whether a sent owner mark matched, never the mark itself: shows in the
-    // runtime logs when a device's marking fails (tracker-deploy skill).
+    // runtime logs when a device's marking fails (opentracker-deploy skill).
     if (owner) {
       console.log(
         `owner mark ${isOwnerMark(owner) ? 'matched' : `mismatch (length ${owner.length})`}`,

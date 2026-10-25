@@ -27,13 +27,20 @@ writeFileSync(
   schema.replace(GENERATOR_LINE, `${GENERATOR_LINE}\n  runtime    = "workerd"`),
 );
 
+// Ctrl-C reaches the child commands too; ignoring it here lets the failed
+// command return so `finally` still restores the Node client.
+process.on('SIGINT', () => {});
+process.on('SIGTERM', () => {});
+
 try {
   run(`npx prisma generate --schema ${WORKERD_SCHEMA}`);
-  run('npx opennextjs-cloudflare build', {
-    OPENTRACKER_TARGET: 'cloudflare',
-    NODE_ENV: 'production',
-  });
+  run('npx opennextjs-cloudflare build', { OPENTRACKER_TARGET: 'cloudflare' });
 } finally {
   rmSync(WORKERD_SCHEMA, { force: true });
-  run('npx prisma generate');
+
+  try {
+    run('npx prisma generate');
+  } catch {
+    console.error('Restoring the Node Prisma client failed: run `pnpm build:db`.');
+  }
 }

@@ -114,10 +114,13 @@ import { addCustomEvent, record } from 'rrweb';
   const isReplayFullSnapshot = event => event?.type === RRWEB_EVENT_TYPE.FullSnapshot;
 
   // Bodies are gzipped where the browser can: replay JSON shrinks about
-  // tenfold, and every uploaded byte is server bandwidth. A small body (a
-  // heatmap beacon) goes as it is, so it never waits on the compressor
-  // while the page unloads.
+  // tenfold, and every uploaded byte is server bandwidth. Compression is
+  // asynchronous, so a page that is closing (keepalive sends) skips it: the
+  // browser may tear the page down before a compressed body would be sent.
   const COMPRESS_MIN_BYTES = 1024;
+  // How long the first replay chunk may go unanswered before later chunks
+  // are sent anyway.
+  const FIRST_ANSWER_TIMEOUT = 10000;
 
   const compressBody = async body => {
     if (typeof CompressionStream === 'undefined' || getPayloadSize(body) < COMPRESS_MIN_BYTES) {
@@ -133,40 +136,48 @@ import { addCustomEvent, record } from 'rrweb';
     }
   };
 
-  const sendPayload = async (type, payload, useKeepalive = false) => {
+  const postBody = (body, compressed, cache, useKeepalive, timeout) => {
+    const size = compressed ? compressed.byteLength : getPayloadSize(body);
+    const signal =
+      timeout && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(timeout) : undefined;
+
+    return fetch(endpoint, {
+      keepalive: useKeepalive && size < 60000,
+      method: 'POST',
+      body: compressed || body,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(compressed && { 'Content-Encoding': 'gzip' }),
+        'x-tracker-cache': cache,
+      },
+      credentials: 'omit',
+      signal,
+    }).catch(() => undefined);
+  };
+
+  const sendPayload = (type, payload, useKeepalive = false, timeout = 0) => {
     const cache = getSessionCache();
 
-    if (!cache) return;
+    if (!cache) return Promise.resolve();
 
     const body = getPayloadBody(type, payload);
-    const compressed = await compressBody(body);
-    const size = compressed ? compressed.byteLength : getPayloadSize(body);
 
-    try {
-      return await fetch(endpoint, {
-        keepalive: useKeepalive && size < 60000,
-        method: 'POST',
-        body: compressed || body,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(compressed && { 'Content-Encoding': 'gzip' }),
-          'x-tracker-cache': cache,
-        },
-        credentials: 'omit',
-      });
-    } catch {
-      return;
+    if (useKeepalive) {
+      return postBody(body, null, cache, true);
     }
+
+    return compressBody(body).then(compressed => postBody(body, compressed, cache, false, timeout));
   };
 
   // The server answers a chunk it will not store (another country, the
-  // visit's chunk cap, replay switched off, a bot) with a refusal; every
-  // later chunk would be refused too, so the recording stops. Until the
-  // first answer arrives, later chunks wait: a refused visitor uploads one
-  // chunk, not five minutes of them.
+  // visit's chunk cap, replay switched off, a bot) with `ok: false` or 403;
+  // every later chunk would be refused too, so the recording stops. Other
+  // errors (a 400 for one odd chunk, a 5xx, no answer) do not stop it. Until
+  // the first answer arrives, later chunks wait: a refused visitor uploads
+  // one chunk, not five minutes of them.
   const isReplayRefusal = async response => {
     if (!response) return false;
-    if (response.status === 400 || response.status === 403) return true;
+    if (response.status === 403) return true;
     if (!response.ok) return false;
 
     try {
@@ -176,8 +187,8 @@ import { addCustomEvent, record } from 'rrweb';
     }
   };
 
-  const postReplayChunk = (events, timestamp, useKeepalive) =>
-    sendPayload('record', { events, timestamp }, useKeepalive).then(isReplayRefusal);
+  const postReplayChunk = (events, timestamp, useKeepalive, timeout) =>
+    sendPayload('record', { events, timestamp }, useKeepalive, timeout).then(isReplayRefusal);
 
   const postOpenReplayChunk = (events, timestamp, useKeepalive) => {
     postReplayChunk(events, timestamp, useKeepalive).then(refused => {
@@ -185,13 +196,19 @@ import { addCustomEvent, record } from 'rrweb';
     });
   };
 
-  const openReplay = () => {
-    replayState = 'open';
-
+  const takeHeldChunks = () => {
     const held = replayHeldChunks;
     replayHeldChunks = [];
 
-    for (const args of held) {
+    return held;
+  };
+
+  const openReplay = () => {
+    if (replayState !== 'waiting') return;
+
+    replayState = 'open';
+
+    for (const args of takeHeldChunks()) {
       postOpenReplayChunk(...args);
     }
   };
@@ -202,7 +219,17 @@ import { addCustomEvent, record } from 'rrweb';
     if (replayState === 'refused') return;
 
     if (replayState === 'waiting') {
-      replayHeldChunks.push([events, timestamp, useKeepalive]);
+      if (!useKeepalive) {
+        replayHeldChunks.push([events, timestamp]);
+        return;
+      }
+
+      // The page is closing before the first answer: what waits goes now.
+      for (const [heldEvents, heldTimestamp] of takeHeldChunks()) {
+        postReplayChunk(heldEvents, heldTimestamp, true);
+      }
+
+      postReplayChunk(events, timestamp, true);
       return;
     }
 
@@ -211,8 +238,9 @@ import { addCustomEvent, record } from 'rrweb';
       return;
     }
 
+    // An unanswered first chunk (timeout, network error) opens the replay.
     replayState = 'waiting';
-    postReplayChunk(events, timestamp, useKeepalive).then(refused =>
+    postReplayChunk(events, timestamp, useKeepalive, FIRST_ANSWER_TIMEOUT).then(refused =>
       refused ? discardReplay() : openReplay(),
     );
   };

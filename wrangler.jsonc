@@ -1,6 +1,8 @@
 // Cloudflare Workers deployment (docs/deployment.md, "Cloudflare Workers").
 // Secrets (DATABASE_URL, APP_SECRET, CRON_SECRET, ...) are set with
-// `wrangler secret put`, never here. Add your domain under "routes", e.g.
+// `wrangler secret put`, never here. For your instance, copy this file to the
+// ignored wrangler.local.jsonc, which the deploy script uses instead, and set
+// "name" and "routes" there, e.g.
 // [{ "pattern": "stats.example.com", "custom_domain": true }].
 {
   "$schema": "node_modules/wrangler/config-schema.json",

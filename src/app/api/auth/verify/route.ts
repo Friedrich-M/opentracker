@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     // The domain only, never the mark: lets the deploy logs show the device
-    // marking working (tracker-deploy skill).
+    // marking working (opentracker-deploy skill).
     console.log(
       `owner cookie ${cookie ? `set on ${getOwnerCookieDomain(host)}` : `not set (host ${host})`}`,
     );

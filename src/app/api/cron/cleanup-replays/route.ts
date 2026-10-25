@@ -4,10 +4,11 @@ import { deleteExpiredHeatmapEvents, deleteExpiredReplays } from '@/queries/pris
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Daily Vercel cron (vercel.json): replays are the bulk of the database, so
-// unsaved ones are kept for REPLAY_RETENTION_DAYS (14 by default); heatmap
-// events for HEATMAP_RETENTION_DAYS when it is set. Vercel sends CRON_SECRET
-// as a bearer token; nothing else may trigger it.
+// Daily cron (vercel.json on Vercel, the cron trigger in wrangler.jsonc on
+// Cloudflare, a systemd timer on a server): replays are the bulk of the
+// database, so unsaved ones are kept for REPLAY_RETENTION_DAYS (14 by
+// default); heatmap events for HEATMAP_RETENTION_DAYS when it is set. Each
+// sends CRON_SECRET as a bearer token; nothing else may trigger it.
 export async function GET(request: Request) {
   if (!isCronRequest(request)) {
     return unauthorized();
