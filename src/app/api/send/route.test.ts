@@ -11,6 +11,7 @@ import { getSalt, secret, uuid } from '@/lib/crypto';
 import { getClientInfo, hasBlockedIp } from '@/lib/detect';
 import { createToken, parseToken } from '@/lib/jwt';
 import { fetchWebsite } from '@/lib/load';
+import { isOwnerDeviceVisit } from '@/lib/owner-device-visit';
 import { parseRequest } from '@/lib/request';
 import {
   createSession,
@@ -32,6 +33,10 @@ vi.mock('@/lib/detect', () => ({
 
 vi.mock('@/lib/load', () => ({
   fetchWebsite: vi.fn(),
+}));
+
+vi.mock('@/lib/owner-device-visit', () => ({
+  isOwnerDeviceVisit: vi.fn(),
 }));
 
 vi.mock('@/lib/request', () => ({
@@ -56,6 +61,7 @@ const getClientInfoMock = vi.mocked(getClientInfo);
 const hasBlockedIpMock = vi.mocked(hasBlockedIp);
 const fetchWebsiteMock = vi.mocked(fetchWebsite);
 const isbotMock = vi.mocked(isbot);
+const isOwnerDeviceVisitMock = vi.mocked(isOwnerDeviceVisit);
 const createSessionMock = vi.mocked(createSession);
 const saveEventMock = vi.mocked(saveEvent);
 const saveSessionDataMock = vi.mocked(saveSessionData);
@@ -118,6 +124,7 @@ beforeEach(() => {
   delete process.env.SALT_ROTATION;
 
   isbotMock.mockReturnValue(false);
+  isOwnerDeviceVisitMock.mockResolvedValue(false);
   hasBlockedIpMock.mockReturnValue(false);
   fetchWebsiteMock.mockResolvedValue({ id: WEBSITE_ID } as any);
   getClientInfoMock.mockResolvedValue({ ...defaultClientInfo } as any);
@@ -249,6 +256,34 @@ describe('bot detection gate', () => {
     await expect(response.json()).resolves.not.toEqual({ beep: 'boop' });
     expect(saveEventMock).toHaveBeenCalledTimes(1);
     expect(isbotMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('owner devices', () => {
+  test('a device listed on the IP label is stored as internal', async () => {
+    isOwnerDeviceVisitMock.mockResolvedValue(true);
+
+    await callPOST({
+      type: 'event',
+      payload: { website: WEBSITE_ID, url: '/', screen: '402x874' },
+    });
+
+    expect(isOwnerDeviceVisitMock).toHaveBeenCalledWith(
+      WEBSITE_ID,
+      defaultClientInfo.ip,
+      defaultClientInfo.os,
+      '402x874',
+    );
+    expect(saveEventMock).toHaveBeenCalledWith(expect.objectContaining({ internal: true }));
+  });
+
+  test('other devices stay public', async () => {
+    await callPOST({
+      type: 'event',
+      payload: { website: WEBSITE_ID, url: '/', screen: '1920x1080' },
+    });
+
+    expect(saveEventMock).toHaveBeenCalledWith(expect.objectContaining({ internal: false }));
   });
 });
 

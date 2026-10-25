@@ -12,7 +12,7 @@ const operation1 = defineOperation({
     operationId: 'getCronCleanupReplays',
     summary: 'Delete expired replays',
     description:
-      'Daily cron job: deletes unsaved session replays older than REPLAY_RETENTION_DAYS (14 by default). Requires the CRON_SECRET bearer token.',
+      'Daily cron job: deletes unsaved session replays older than REPLAY_RETENTION_DAYS (14 by default), except pages tagged in REPLAY_KEEP_TAGS. Requires the CRON_SECRET bearer token.',
     tags: ['Cron'],
     responses: {
       '200': {

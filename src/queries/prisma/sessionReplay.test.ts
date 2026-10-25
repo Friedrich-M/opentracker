@@ -50,3 +50,13 @@ test('with nothing saved every expired chunk goes', async () => {
 
   expect(mocks.replayDeleteMany).toHaveBeenCalledWith({ where: { createdAt: { lt: before } } });
 });
+
+test('chunks from kept tags never expire; untagged chunks still do', async () => {
+  mocks.savedFindMany.mockResolvedValue([]);
+
+  await deleteExpiredReplays(before, ['home']);
+
+  expect(mocks.replayDeleteMany).toHaveBeenCalledWith({
+    where: { createdAt: { lt: before }, OR: [{ tag: null }, { tag: { notIn: ['home'] } }] },
+  });
+});

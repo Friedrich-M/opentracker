@@ -6,20 +6,23 @@ import type { PageResult, QueryFilters } from '@/lib/types';
 
 /**
  * Deletes replay chunks recorded before `before`, except visits the owner
- * saved. Returns the number of chunks removed.
+ * saved and chunks from pages tagged with one of `keepTags`. Returns the
+ * number of chunks removed.
  */
-export async function deleteExpiredReplays(before: Date) {
+export async function deleteExpiredReplays(before: Date, keepTags: string[] = []) {
   const saved = await prisma.client.sessionReplaySaved.findMany({
     select: { websiteId: true, visitId: true },
   });
 
   // A save keeps its own website's chunks only: matched on the pair, not the
-  // visit id alone, which another website could share.
+  // visit id alone, which another website could share. Untagged chunks are
+  // matched explicitly: SQL's `not in` is never true for a null tag.
   const where = {
     createdAt: { lt: before },
     ...(saved.length
       ? { NOT: { OR: saved.map(({ websiteId, visitId }) => ({ websiteId, visitId })) } }
       : {}),
+    ...(keepTags.length ? { OR: [{ tag: null }, { tag: { notIn: keepTags } }] } : {}),
   };
   const expired = await prisma.client.sessionReplay.findMany({
     where,

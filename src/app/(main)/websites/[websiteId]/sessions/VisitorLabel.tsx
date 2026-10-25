@@ -1,14 +1,17 @@
-import { Button, Icon, Row, TextField } from '@umami/react-zen';
+import { Button, Checkbox, Icon, Row, TextField } from '@umami/react-zen';
 import { useEffect, useState } from 'react';
 import { useApi, useMessages, useModified, useVisitorLabelQuery } from '@/components/hooks';
 import { Edit } from '@/components/icons';
+import { isOwnerDevice, type OwnerDevice, toOwnerDevices } from '@/lib/owner-devices';
 import styles from './VisitorActivity.module.css';
 
 /**
  * The owner's name and note for the visitor at this IP. Saved labels show in
- * Visitor Activity for every session from the same address.
+ * Visitor Activity for every session from the same address. "This device is
+ * me" adds or removes this session's OS and screen in the label's owner
+ * devices, whose visits are then stored as internal.
  */
-export function VisitorLabel({ ip }: { ip: string }) {
+export function VisitorLabel({ ip, os, screen }: { ip: string; os?: string; screen?: string }) {
   const { t, labels } = useMessages();
   const { post, del } = useApi();
   const { touch } = useModified();
@@ -17,11 +20,16 @@ export function VisitorLabel({ ip }: { ip: string }) {
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const devices = toOwnerDevices(data?.ownerDevices);
+  const canMarkDevice = Boolean(os && screen);
+  const isMe = isOwnerDevice(devices, os, screen);
+  const [markMe, setMarkMe] = useState(false);
 
   useEffect(() => {
     setName(data?.name ?? '');
     setNote(data?.note ?? '');
-  }, [data?.name, data?.note]);
+    setMarkMe(isMe);
+  }, [data?.name, data?.note, isMe]);
 
   const done = () => {
     touch('visitor-labels');
@@ -33,7 +41,10 @@ export function VisitorLabel({ ip }: { ip: string }) {
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    await post('/me/visitor-labels', { ip, name, note: note || null }).finally(done);
+    const others = devices.filter(d => !(d.os === os && d.screen === screen));
+    const ownerDevices: OwnerDevice[] =
+      markMe && canMarkDevice ? [...others, { os, screen }] : others;
+    await post('/me/visitor-labels', { ip, name, note: note || null, ownerDevices }).finally(done);
   };
 
   const remove = async () => {
@@ -46,6 +57,7 @@ export function VisitorLabel({ ip }: { ip: string }) {
       <Row alignItems="center" gap="2" wrap="wrap">
         {data?.name && <span className={styles.tag}>{data.name}</span>}
         {data?.note && <span className={styles.muted}>{data.note}</span>}
+        {isMe && <span className={styles.muted}>{t(labels.ownerDevice)}</span>}
         <Button variant="quiet" size="sm" onPress={() => setEditing(true)}>
           <Icon size="sm">
             <Edit />
@@ -73,6 +85,11 @@ export function VisitorLabel({ ip }: { ip: string }) {
         maxLength={500}
         style={{ minWidth: 240 }}
       />
+      {canMarkDevice && (
+        <Checkbox value={markMe ? 'true' : ''} onChange={setMarkMe}>
+          {t(labels.ownerDevice)}
+        </Checkbox>
+      )}
       <Button variant="primary" onPress={save} isDisabled={saving || !name.trim()}>
         {t(labels.save)}
       </Button>

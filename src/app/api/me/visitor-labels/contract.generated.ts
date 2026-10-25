@@ -118,8 +118,63 @@ const operation2 = defineOperation({
                   type: 'string',
                   description: 'Text of the annotation.',
                 },
+                ownerDevices: {
+                  anyOf: [
+                    {
+                      type: 'string',
+                    },
+                    {
+                      type: 'number',
+                    },
+                    {
+                      const: false,
+                    },
+                    {
+                      const: true,
+                    },
+                    {
+                      type: 'object',
+                      properties: {},
+                      additionalProperties: {
+                        anyOf: [
+                          {
+                            type: 'string',
+                          },
+                          {
+                            type: 'number',
+                          },
+                          {
+                            const: false,
+                          },
+                          {
+                            const: true,
+                          },
+                          {},
+                          {
+                            type: 'object',
+                            properties: {
+                              length: {
+                                type: 'number',
+                              },
+                            },
+                            required: ['length'],
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      type: 'object',
+                      properties: {
+                        length: {
+                          type: 'number',
+                        },
+                      },
+                      required: ['length'],
+                    },
+                  ],
+                },
               },
-              required: ['updatedAt', 'name', 'ip', 'note'],
+              required: ['updatedAt', 'name', 'ip', 'note', 'ownerDevices'],
             },
           },
         },
@@ -171,7 +226,7 @@ const operation3 = defineOperation({
     operationId: 'saveMyVisitorLabel',
     summary: 'Label a visitor',
     description:
-      "Creates or replaces the current user's label and note for the visitor at an IP address.",
+      "Creates or replaces the current user's label and note for the visitor at an IP address. `ownerDevices` lists the user's own devices at that IP by OS and screen size; their visits, recorded and future, are stored as internal.",
     tags: ['Account'],
     requestBody: {
       required: true,
@@ -202,6 +257,34 @@ const operation3 = defineOperation({
                 ],
                 description: 'Text of the annotation.',
               },
+              ownerDevices: {
+                anyOf: [
+                  {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        os: {
+                          type: 'string',
+                          minLength: 1,
+                          maxLength: 20,
+                          description: 'Operating system used by the visitor.',
+                        },
+                        screen: {
+                          type: 'string',
+                          minLength: 1,
+                          maxLength: 11,
+                          description: 'Screen resolution of the visitor device.',
+                        },
+                      },
+                      required: ['os', 'screen'],
+                    },
+                  },
+                  {
+                    type: 'null',
+                  },
+                ],
+              },
             },
             required: ['ip', 'name'],
           },
@@ -216,6 +299,19 @@ const operation3 = defineOperation({
             schema: {
               type: 'object',
               properties: {
+                id: {
+                  type: 'string',
+                  description: 'Unique identifier of the resource.',
+                },
+                userId: {
+                  type: 'string',
+                  description: 'ID of the associated user.',
+                },
+                createdAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'Date and time the record was created.',
+                },
                 updatedAt: {
                   type: 'string',
                   format: 'date-time',
@@ -233,8 +329,72 @@ const operation3 = defineOperation({
                   type: 'string',
                   description: 'Text of the annotation.',
                 },
+                ownerDevices: {
+                  anyOf: [
+                    {
+                      type: 'string',
+                    },
+                    {
+                      type: 'number',
+                    },
+                    {
+                      const: false,
+                    },
+                    {
+                      const: true,
+                    },
+                    {
+                      type: 'object',
+                      properties: {},
+                      additionalProperties: {
+                        anyOf: [
+                          {
+                            type: 'string',
+                          },
+                          {
+                            type: 'number',
+                          },
+                          {
+                            const: false,
+                          },
+                          {
+                            const: true,
+                          },
+                          {},
+                          {
+                            type: 'object',
+                            properties: {
+                              length: {
+                                type: 'number',
+                              },
+                            },
+                            required: ['length'],
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      type: 'object',
+                      properties: {
+                        length: {
+                          type: 'number',
+                        },
+                      },
+                      required: ['length'],
+                    },
+                  ],
+                },
               },
-              required: ['updatedAt', 'name', 'ip', 'note'],
+              required: [
+                'id',
+                'userId',
+                'createdAt',
+                'updatedAt',
+                'name',
+                'ip',
+                'note',
+                'ownerDevices',
+              ],
             },
           },
         },

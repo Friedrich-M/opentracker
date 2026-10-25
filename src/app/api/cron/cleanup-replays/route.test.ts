@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { getRetentionDays } from '@/lib/cron';
+import { getReplayKeepTags, getRetentionDays } from '@/lib/cron';
 import { deleteExpiredHeatmapEvents, deleteExpiredReplays } from '@/queries/prisma';
 import { GET } from './route';
 
@@ -58,6 +58,17 @@ test('retention defaults to 14 days', () => {
   expect(getRetentionDays()).toBe(14);
   vi.stubEnv('REPLAY_RETENTION_DAYS', '30');
   expect(getRetentionDays()).toBe(30);
+});
+
+test('REPLAY_KEEP_TAGS reaches the cleanup as trimmed tags', async () => {
+  vi.stubEnv('CRON_SECRET', 'cron-secret');
+  vi.stubEnv('REPLAY_KEEP_TAGS', ' home, research ,');
+
+  await call('Bearer cron-secret');
+
+  expect(vi.mocked(deleteExpiredReplays).mock.calls[0][1]).toEqual(['home', 'research']);
+  vi.stubEnv('REPLAY_KEEP_TAGS', '');
+  expect(getReplayKeepTags()).toEqual([]);
 });
 
 test('keeps heatmap events unless HEATMAP_RETENTION_DAYS is set', async () => {

@@ -1,7 +1,13 @@
 import { z } from 'zod';
+import { MAX_OWNER_DEVICES } from '@/lib/owner-devices';
 import { parseRequest } from '@/lib/request';
 import { badRequest, json, ok, unauthorized } from '@/lib/response';
-import { deleteVisitorLabel, getVisitorLabel, saveVisitorLabel } from '@/queries/prisma';
+import {
+  deleteVisitorLabel,
+  getVisitorLabel,
+  markOwnerDeviceVisits,
+  saveVisitorLabel,
+} from '@/queries/prisma';
 
 // The owner's labels for visitors, keyed by IP. Labels are network data, so
 // only logged-in users reach them, and each user sees only their own.
@@ -26,6 +32,12 @@ export async function POST(request: Request) {
     ip: z.string().min(1).max(45),
     name: z.string().trim().min(1).max(100),
     note: z.string().trim().max(500).optional().nullable(),
+    // The owner's own devices at this IP; their visits become internal.
+    ownerDevices: z
+      .array(z.object({ os: z.string().min(1).max(20), screen: z.string().min(1).max(11) }))
+      .max(MAX_OWNER_DEVICES)
+      .optional()
+      .nullable(),
   });
 
   const { auth, body, error } = await parseRequest(request, schema);
@@ -38,7 +50,19 @@ export async function POST(request: Request) {
     return unauthorized();
   }
 
-  return json(await saveVisitorLabel(auth.user.id, body.ip, body.name, body.note || null));
+  const devices = body.ownerDevices ?? [];
+  const label = await saveVisitorLabel(
+    auth.user.id,
+    body.ip,
+    body.name,
+    body.note || null,
+    devices,
+  );
+
+  // Visits already recorded from those devices are the owner's too.
+  await markOwnerDeviceVisits(auth.user.id, body.ip, devices);
+
+  return json(label);
 }
 
 // DELETE carries the IP in the query string (parseRequest validates bodies

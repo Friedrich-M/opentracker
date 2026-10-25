@@ -114,7 +114,7 @@ The proxy example assumes Nginx directly receives public traffic. If a trusted C
 
 ### 6. Schedule replay cleanup
 
-Saved replays are retained; unsaved chunks expire after `REPLAY_RETENTION_DAYS`. On a server, schedule the authenticated cleanup endpoint yourself. Install the checked-in [cleanup service](../deploy/systemd/opentracker-cleanup.service):
+Saved replays, and chunks from pages tagged in `REPLAY_KEEP_TAGS`, are retained; other chunks expire after `REPLAY_RETENTION_DAYS`. On a server, schedule the authenticated cleanup endpoint yourself. Install the checked-in [cleanup service](../deploy/systemd/opentracker-cleanup.service):
 
 ```sh
 sudo install -m 644 /srv/opentracker/app/deploy/systemd/opentracker-cleanup.service /etc/systemd/system/opentracker-cleanup.service

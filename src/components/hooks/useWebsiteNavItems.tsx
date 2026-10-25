@@ -1,6 +1,25 @@
 import { useMessages } from './useMessages';
 import { useNavigation } from './useNavigation';
 
+/**
+ * Report ids named in NEXT_PUBLIC_HIDDEN_REPORTS (comma-separated, read at
+ * build time) are left out of the website menu. The pages stay reachable by
+ * URL; the setting only shortens the menu for instances that never use them.
+ */
+const HIDDEN_REPORTS = (process.env.NEXT_PUBLIC_HIDDEN_REPORTS ?? '')
+  .split(',')
+  .map(id => id.trim())
+  .filter(Boolean);
+
+export function withoutHiddenReports<I extends { id: string }, G extends { items: I[] }>(
+  groups: G[],
+  hidden: string[] = HIDDEN_REPORTS,
+) {
+  return groups
+    .map((group): G => ({ ...group, items: group.items.filter(({ id }) => !hidden.includes(id)) }))
+    .filter(group => group.items.length);
+}
+
 export function useWebsiteNavItems(websiteId: string) {
   const { t, labels } = useMessages();
   const { pathname, renderUrl } = useNavigation();
@@ -19,7 +38,7 @@ export function useWebsiteNavItems(websiteId: string) {
       excludeBounce: undefined,
     });
 
-  const items = [
+  const items = withoutHiddenReports([
     {
       label: t(labels.traffic),
       items: [
@@ -125,7 +144,7 @@ export function useWebsiteNavItems(websiteId: string) {
         },
       ],
     },
-  ];
+  ]);
 
   const selectedKey = items
     .flatMap(e => e.items)

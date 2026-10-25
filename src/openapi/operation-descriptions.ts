@@ -84,7 +84,7 @@ export const operationDescriptions: Record<string, OperationDescription> = {
   'GET /api/cron/cleanup-replays': {
     summary: 'Delete expired replays',
     description:
-      'Daily cron job: deletes unsaved session replays older than REPLAY_RETENTION_DAYS (14 by default). Requires the CRON_SECRET bearer token.',
+      'Daily cron job: deletes unsaved session replays older than REPLAY_RETENTION_DAYS (14 by default), except pages tagged in REPLAY_KEEP_TAGS. Requires the CRON_SECRET bearer token.',
   },
   'GET /api/heartbeat': {
     summary: 'Check application availability',
@@ -123,7 +123,7 @@ export const operationDescriptions: Record<string, OperationDescription> = {
   'POST /api/me/visitor-labels': {
     summary: 'Label a visitor',
     description:
-      "Creates or replaces the current user's label and note for the visitor at an IP address.",
+      "Creates or replaces the current user's label and note for the visitor at an IP address. `ownerDevices` lists the user's own devices at that IP by OS and screen size; their visits, recorded and future, are stored as internal.",
   },
   'DELETE /api/me/visitor-labels': {
     summary: 'Remove a visitor label',

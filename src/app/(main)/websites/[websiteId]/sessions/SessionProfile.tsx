@@ -85,7 +85,9 @@ export function SessionProfile({
               <Heading size={{ base: 'xl', md: '2xl' }}>{title}</Heading>
               <Row alignItems="center" gap="3" wrap="wrap">
                 <SessionMark id={data.id} size="lg" />
-                {isOwner && data.ip && <VisitorLabel ip={data.ip} />}
+                {isOwner && data.ip && (
+                  <VisitorLabel ip={data.ip} os={data.os} screen={data.screen} />
+                )}
               </Row>
             </Column>
 

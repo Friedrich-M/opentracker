@@ -681,8 +681,72 @@ const operation2 = defineOperation({
                         type: 'string',
                         description: 'Text of the annotation.',
                       },
+                      ownerDevices: {
+                        anyOf: [
+                          {
+                            type: 'string',
+                          },
+                          {
+                            type: 'number',
+                          },
+                          {
+                            const: false,
+                          },
+                          {
+                            const: true,
+                          },
+                          {
+                            type: 'object',
+                            properties: {},
+                            additionalProperties: {
+                              anyOf: [
+                                {
+                                  type: 'string',
+                                },
+                                {
+                                  type: 'number',
+                                },
+                                {
+                                  const: false,
+                                },
+                                {
+                                  const: true,
+                                },
+                                {},
+                                {
+                                  type: 'object',
+                                  properties: {
+                                    length: {
+                                      type: 'number',
+                                    },
+                                  },
+                                  required: ['length'],
+                                },
+                              ],
+                            },
+                          },
+                          {
+                            type: 'object',
+                            properties: {
+                              length: {
+                                type: 'number',
+                              },
+                            },
+                            required: ['length'],
+                          },
+                        ],
+                      },
                     },
-                    required: ['id', 'userId', 'createdAt', 'updatedAt', 'name', 'ip', 'note'],
+                    required: [
+                      'id',
+                      'userId',
+                      'createdAt',
+                      'updatedAt',
+                      'name',
+                      'ip',
+                      'note',
+                      'ownerDevices',
+                    ],
                   },
                 },
                 _count: {

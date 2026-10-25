@@ -1,13 +1,10 @@
 import { Column, Grid, Row, Text } from '@umami/react-zen';
 import { useSpring, useTransform } from 'motion/react';
 import { type ReactNode, useEffect } from 'react';
-import { List, type RowComponentProps } from 'react-window';
 import { AnimatedDiv } from '@/components/common/AnimatedDiv';
 import { Empty } from '@/components/common/Empty';
 import { useMessages, useMobile } from '@/components/hooks';
 import { formatLongNumber } from '@/lib/format';
-
-const ITEM_SIZE = 30;
 
 interface ListData {
   label: string;
@@ -23,20 +20,8 @@ export interface ListTableProps {
   renderLabel?: (data: ListData, index: number) => ReactNode;
   renderChange?: (data: ListData, index: number) => ReactNode;
   animate?: boolean;
-  virtualize?: boolean;
   showPercentage?: boolean;
-  itemCount?: number;
   formatCount?: (n: number) => string;
-}
-
-// Outside ListTable so react-window keeps its rows mounted across renders.
-function ListTableRow({
-  index,
-  style,
-  data,
-  getRow,
-}: RowComponentProps<{ data: any[]; getRow: (row: any, index: number) => ReactNode }>) {
-  return <div style={style}>{getRow(data[index], index)}</div>;
 }
 
 export function ListTable({
@@ -46,9 +31,7 @@ export function ListTable({
   renderLabel,
   renderChange,
   animate = true,
-  virtualize = false,
   showPercentage = true,
-  itemCount = 10,
   formatCount,
 }: ListTableProps) {
   const { t, labels } = useMessages();
@@ -63,7 +46,7 @@ export function ListTable({
         label={renderLabel ? renderLabel(row, index) : (label ?? t(labels.unknown))}
         value={count}
         percent={percent}
-        animate={animate && !virtualize}
+        animate={animate}
         showPercentage={showPercentage}
         change={renderChange ? renderChange(row, index) : null}
         formatCount={formatCount}
@@ -87,18 +70,7 @@ export function ListTable({
       </Grid>
       <Column gap="1">
         {data?.length === 0 && <Empty />}
-        {virtualize && data.length > 0 ? (
-          <List
-            style={{ width: '100%', height: itemCount * ITEM_SIZE }}
-            defaultHeight={itemCount * ITEM_SIZE}
-            rowCount={data.length}
-            rowHeight={ITEM_SIZE}
-            rowComponent={ListTableRow}
-            rowProps={{ data, getRow }}
-          />
-        ) : (
-          data.map(getRow)
-        )}
+        {data.map(getRow)}
       </Column>
     </Column>
   );

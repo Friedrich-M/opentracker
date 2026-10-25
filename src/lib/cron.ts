@@ -24,6 +24,17 @@ export function getRetentionDays() {
 }
 
 /**
+ * Page tags whose replay chunks never expire (REPLAY_KEEP_TAGS, comma-separated),
+ * as if every visit to those pages were saved.
+ */
+export function getReplayKeepTags() {
+  return (process.env.REPLAY_KEEP_TAGS ?? '')
+    .split(',')
+    .map(tag => tag.trim())
+    .filter(Boolean);
+}
+
+/**
  * Days heatmap events are kept (HEATMAP_RETENTION_DAYS), or null when unset:
  * they are then kept indefinitely, as before the setting existed.
  */

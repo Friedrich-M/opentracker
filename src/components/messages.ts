@@ -409,6 +409,7 @@ export const labels: Record<string, string> = {
   searchReferral: 'label.search-referral',
   removeLabel: 'label.remove-label',
   labelVisitorHint: 'label.label-visitor-hint',
+  ownerDevice: 'label.owner-device',
   noReplay: 'label.no-replay',
   visitorDetails: 'label.visitor-details',
   projects: 'label.projects',

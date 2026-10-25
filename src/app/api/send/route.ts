@@ -9,6 +9,7 @@ import { truncateString } from '@/lib/format';
 import { isInternalVisit, isOwnerMark } from '@/lib/internal';
 import { createToken, parseToken } from '@/lib/jwt';
 import { fetchWebsite } from '@/lib/load';
+import { isOwnerDeviceVisit } from '@/lib/owner-device-visit';
 import { parseRequest } from '@/lib/request';
 import { badRequest, forbidden, json, serverError } from '@/lib/response';
 import { anyObjectParam, urlOrPathParam } from '@/lib/schema';
@@ -119,7 +120,7 @@ export async function POST(request: Request) {
       ttfb,
     } = payload;
 
-    const internal = isInternalVisit({ owner, hostname, origin: request.headers.get('origin') });
+    let internal = isInternalVisit({ owner, hostname, origin: request.headers.get('origin') });
 
     // Whether a sent owner mark matched, never the mark itself: shows in the
     // runtime logs when a device's marking fails (opentracker-deploy skill).
@@ -168,6 +169,12 @@ export async function POST(request: Request) {
     // IP block
     if (hasBlockedIp(ip)) {
       return forbidden();
+    }
+
+    // A device the owner listed on this IP's visitor label (an in-app browser
+    // the owner mark cannot reach) is the owner's own visit too.
+    if (!internal && (await isOwnerDeviceVisit(websiteId, ip, os, screen))) {
+      internal = true;
     }
 
     const createdAt = timestamp ? new Date(timestamp * 1000) : new Date();
