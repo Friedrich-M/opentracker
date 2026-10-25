@@ -29,6 +29,16 @@ export interface ListTableProps {
   formatCount?: (n: number) => string;
 }
 
+// Outside ListTable so react-window keeps its rows mounted across renders.
+function ListTableRow({
+  index,
+  style,
+  data,
+  getRow,
+}: RowComponentProps<{ data: any[]; getRow: (row: any, index: number) => ReactNode }>) {
+  return <div style={style}>{getRow(data[index], index)}</div>;
+}
+
 export function ListTable({
   data = [],
   title,
@@ -62,10 +72,6 @@ export function ListTable({
     );
   };
 
-  const ListTableRow = ({ index, style }: RowComponentProps) => {
-    return <div style={style}>{getRow(data[index], index)}</div>;
-  };
-
   return (
     <Column gap>
       <Grid
@@ -88,7 +94,7 @@ export function ListTable({
             rowCount={data.length}
             rowHeight={ITEM_SIZE}
             rowComponent={ListTableRow}
-            rowProps={{}}
+            rowProps={{ data, getRow }}
           />
         ) : (
           data.map(getRow)

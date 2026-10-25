@@ -18,6 +18,28 @@ interface AttributionProps {
   step: string;
 }
 
+function AttributionTable({ data = [], title }: { data: any; title: string }) {
+  const { t, labels } = useMessages();
+  const attributionData = percentFilter(
+    data.map(({ name, value }) => ({
+      x: name,
+      y: Number(value),
+    })),
+  );
+
+  return (
+    <ListTable
+      title={title}
+      metric={t(labels.visitors)}
+      data={attributionData.map(({ x, y, z }: { x: string; y: number; z: number }) => ({
+        label: x,
+        count: y,
+        percent: z,
+      }))}
+    />
+  );
+}
+
 export function Attribution({
   websiteId,
   startDate,
@@ -61,27 +83,6 @@ export function Attribution({
         },
       ]
     : [];
-
-  function AttributionTable({ data = [], title }: { data: any; title: string }) {
-    const attributionData = percentFilter(
-      data.map(({ name, value }) => ({
-        x: name,
-        y: Number(value),
-      })),
-    );
-
-    return (
-      <ListTable
-        title={title}
-        metric={t(labels.visitors)}
-        data={attributionData.map(({ x, y, z }: { x: string; y: number; z: number }) => ({
-          label: x,
-          count: y,
-          percent: z,
-        }))}
-      />
-    );
-  }
 
   return (
     <LoadingPanel data={data} isLoading={isLoading} error={error}>

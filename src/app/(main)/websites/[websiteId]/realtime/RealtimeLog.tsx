@@ -1,5 +1,5 @@
 import { Column, Heading, Row, SearchField, Text } from '@umami/react-zen';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { List, type RowComponentProps } from 'react-window';
 import { SessionModal } from '@/app/(main)/websites/[websiteId]/sessions/SessionModal';
 import { Empty } from '@/components/common/Empty';
@@ -33,6 +33,43 @@ const icons = {
   [TYPE_SESSION]: <User />,
   [TYPE_EVENT]: <Lightning />,
 };
+
+interface RealtimeLogRowProps {
+  logs: any[];
+  getTime: (row: any) => ReactNode;
+  getIcon: (row: any) => ReactNode;
+  getDetail: (row: any) => ReactNode;
+  updateParams: (params?: Record<string, string | number>) => string;
+}
+
+// Outside RealtimeLog so react-window keeps its rows mounted across renders.
+function RealtimeLogRow({
+  index,
+  style,
+  logs,
+  getTime,
+  getIcon,
+  getDetail,
+  updateParams,
+}: RowComponentProps<RealtimeLogRowProps>) {
+  const row = logs[index];
+
+  return (
+    <Row alignItems="center" style={{ ...style, minWidth: 0 }} gap>
+      <Row minWidth="30px">
+        <Link href={updateParams({ session: row.sessionId })}>
+          <SessionMark id={row.sessionId} />
+        </Link>
+      </Row>
+      <Row minWidth="100px">
+        <Text wrap="nowrap">{getTime(row)}</Text>
+      </Row>
+      <IconLabel icon={getIcon(row)} style={{ minWidth: 0, flex: 1 }}>
+        <Text truncate>{getDetail(row)}</Text>
+      </IconLabel>
+    </Row>
+  );
+}
 
 export function RealtimeLog({ data }: { data: any }) {
   const website = useWebsite();
@@ -123,25 +160,6 @@ export function RealtimeLog({ data }: { data: any }) {
     }
   };
 
-  const TableRow = ({ index, style, logs }: RowComponentProps<{ logs: any[] }>) => {
-    const row = logs[index];
-    return (
-      <Row alignItems="center" style={{ ...style, minWidth: 0 }} gap>
-        <Row minWidth="30px">
-          <Link href={updateParams({ session: row.sessionId })}>
-            <SessionMark id={row.sessionId} />
-          </Link>
-        </Row>
-        <Row minWidth="100px">
-          <Text wrap="nowrap">{getTime(row)}</Text>
-        </Row>
-        <IconLabel icon={getIcon(row)} style={{ minWidth: 0, flex: 1 }}>
-          <Text truncate>{getDetail(row)}</Text>
-        </IconLabel>
-      </Row>
-    );
-  };
-
   const logs = useMemo(() => {
     if (!data) {
       return [];
@@ -208,10 +226,10 @@ export function RealtimeLog({ data }: { data: any }) {
         {logs?.length === 0 && <Empty />}
         {logs.length > 0 && (
           <List
-            rowComponent={TableRow}
+            rowComponent={RealtimeLogRow}
             rowCount={logs.length}
             rowHeight={ROW_HEIGHT}
-            rowProps={{ logs }}
+            rowProps={{ logs, getTime, getIcon, getDetail, updateParams }}
             defaultHeight={listHeight}
             style={{ width: '100%', height: listHeight }}
           />
