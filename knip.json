@@ -8,14 +8,24 @@
         "src/tracker/index.ts",
         "scripts/**/*.{js,mjs,ts}",
         "src/**/*.test.{ts,tsx}",
-        "src/test/**/*.{ts,tsx}"
+        "src/test/**/*.{ts,tsx}",
+        "open-next.config.ts"
       ],
-      "project": ["src/**/*.{ts,tsx,js}", "scripts/**"],
+      "project": [
+        "src/**/*.{ts,tsx,js}",
+        "scripts/**"
+      ],
       "rollup": {
-        "config": ["src/*/rollup.config.js"]
+        "config": [
+          "src/*/rollup.config.js"
+        ]
       },
-      "ignore": ["src/tracker/index.d.ts"],
-      "ignoreDependencies": ["punycode"]
+      "ignore": [
+        "src/tracker/index.d.ts"
+      ],
+      "ignoreDependencies": [
+        "punycode"
+      ]
     }
   }
 }

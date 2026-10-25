@@ -1,6 +1,6 @@
 # Deploy OpenTracker
 
-You can run the application on a Linux server or Vercel. PostgreSQL is required; replay bodies can stay in PostgreSQL or use the optional Cloudflare R2 Worker. Use your own accounts and configuration. Keep credentials, database dumps and instance notes outside Git.
+You can run the application on a Linux server, Vercel or Cloudflare Workers. PostgreSQL is required; replay bodies can stay in PostgreSQL or use the optional Cloudflare R2 Worker. Use your own accounts and configuration. Keep credentials, database dumps and instance notes outside Git.
 
 ## Linux server
 
@@ -166,6 +166,23 @@ An application rollback restores the prior commit’s code and rebuilds it; it d
 On Vercel the visitor's address is read from `x-real-ip`, which Vercel sets itself, and location from Vercel's own headers; `CLIENT_IP_HEADER` overrides the header.
 
 `sh scripts/deploy/vercel.sh` uploads an archive of the committed tree using the local project link. It refuses a dirty tree and checks staged source before upload. Confirm the intended CLI account and project before invoking it. A Git push deploys only if you configure the provider integration.
+
+## Cloudflare Workers
+
+The app runs as one Worker through the OpenNext adapter (`wrangler.jsonc`, `open-next.config.ts`, entry `deploy/cloudflare/worker.js`). The Worker is about 7 MB compressed, over the free plan's 3 MB limit, so the account needs the Workers Paid plan. Data transfer is not billed.
+
+1. Sign in with `npx wrangler login` and set `name` in `wrangler.jsonc`; add your domain under `routes` (`custom_domain: true` for a domain in the same account).
+2. Store run-time secrets with `npx wrangler secret put NAME`: `DATABASE_URL`, `APP_SECRET`, `TWO_FACTOR_ENCRYPTION_KEY` and `CRON_SECRET` (fresh values from `openssl rand -hex 32`), plus `REPLAY_STORE_URL` and `REPLAY_STORE_SECRET` with R2. Other settings go under `vars`.
+3. Export `DATABASE_URL` (and any `NEXT_PUBLIC_*` settings) in your shell and run `sh scripts/deploy/cloudflare.sh`. It builds `git archive HEAD` in a temporary folder, applies migrations and runs `wrangler deploy`; it refuses a dirty tree.
+4. Sign in as `admin` / `umami` and change the password at once.
+
+Differences from the other hosts:
+
+- `CLIENT_IP_HEADER` is `cf-connecting-ip` (set in `vars`), and location and network (`asn`, `org`) come from Cloudflare's `request.cf`. The GeoLite databases are not used, so the visitor map has no coordinates.
+- A Worker cannot reuse a database connection across requests, so each request opens its own. To pool them, create a Hyperdrive config for the database and bind it as `HYPERDRIVE` (commented in `wrangler.jsonc`); it then replaces `DATABASE_URL` at run time.
+- The cron trigger in `wrangler.jsonc` runs the daily replay cleanup with `CRON_SECRET`.
+- The build generates a Prisma client for workerd and restores the Node client afterwards (`scripts/build/cloudflare.js`). OpenNext embeds `.env` files in the Worker, which is why the deploy builds from a clean archive.
+- `wrangler tail` shows run-time logs; `npx wrangler rollback` restores an earlier upload without undoing migrations.
 
 ## Optional Cloudflare R2 replay storage
 

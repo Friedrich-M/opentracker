@@ -17,6 +17,8 @@ package-lock.json
 /public/recorder.js
 /public/openapi.json
 /geo/
+/.open-next/
+/prisma/schema.workerd.prisma
 next-env.d.ts
 *.tsbuildinfo
 

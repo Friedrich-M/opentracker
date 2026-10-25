@@ -1,0 +1,21 @@
+// Cloudflare Workers deployment (docs/deployment.md, "Cloudflare Workers").
+// Secrets (DATABASE_URL, APP_SECRET, CRON_SECRET, ...) are set with
+// `wrangler secret put`, never here. Add your domain under "routes", e.g.
+// [{ "pattern": "stats.example.com", "custom_domain": true }].
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "opentracker",
+  "main": "deploy/cloudflare/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "triggers": { "crons": ["0 9 * * *"] },
+  "observability": { "enabled": true },
+  "vars": {
+    // Cloudflare sets cf-connecting-ip to the visitor's address.
+    "CLIENT_IP_HEADER": "cf-connecting-ip"
+  }
+  // Optional connection pooling: create a Hyperdrive config for DATABASE_URL
+  // and bind it as HYPERDRIVE; it then replaces DATABASE_URL at run time.
+  // "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "<hyperdrive-id>" }]
+}

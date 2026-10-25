@@ -12,6 +12,8 @@ allowBuilds:
   msw: false
   prisma: true
   sharp: false
+  # workerd (Cloudflare build preview): postinstall checks its platform binary.
+  workerd: true
 minimumReleaseAgeExclude:
   - '@umami/react-zen'
   - cn@0.2.6

@@ -4,6 +4,7 @@ import ipaddr from 'ipaddr.js';
 import isLocalhost from 'is-localhost-ip';
 import maxmind from 'maxmind';
 import UAParser from 'ua-parser-js';
+import { getCloudflareContext } from '@/lib/cloudflare';
 import { getIpAddress, getTrustedIpHeader, stripPort } from '@/lib/ip';
 import { safeDecodeURIComponent } from '@/lib/url';
 
@@ -75,7 +76,17 @@ function decodeHeader(s: string | undefined | null): string | undefined | null {
   return Buffer.from(s, 'latin1').toString('utf-8');
 }
 
+const LOCAL_RANGES = ['loopback', 'private', 'linkLocal', 'uniqueLocal', 'unspecified'];
+
 async function isLocalIp(ip: string) {
+  // is-localhost-ip probes a public address by binding a UDP socket, which
+  // never settles on a Cloudflare Worker; there the reserved ranges decide.
+  if (getCloudflareContext()) {
+    const address = ipaddr.process(ip);
+
+    return LOCAL_RANGES.includes(address.range());
+  }
+
   try {
     return await isLocalhost(ip);
   } catch {
@@ -89,6 +100,14 @@ export async function getLocation(ip: string = '', headers: Headers, skipHeaders
   // Ignore local or invalid ips
   if (!cleanIp || !ipaddr.isValid(cleanIp) || (await isLocalIp(cleanIp))) {
     return null;
+  }
+
+  // On a Cloudflare Worker, `request.cf` has the region and city that the
+  // cf-* headers carry only with a managed transform.
+  const cloudflareLocation = skipHeaders ? undefined : getCloudflareLocation();
+
+  if (cloudflareLocation) {
+    return cloudflareLocation;
   }
 
   // A provider's location headers are believed only when its IP header is the
@@ -117,8 +136,9 @@ export async function getLocation(ip: string = '', headers: Headers, skipHeaders
     }
   }
 
-  // Database lookup. Without the database (SKIP_BUILD_GEO) the visit is
-  // still collected, with no location, rather than failing the request.
+  // Database lookup. Without the database (SKIP_BUILD_GEO, or a Cloudflare
+  // Worker, which has no file system) the visit is still collected, with no
+  // location, rather than failing the request.
   if (!globalThis[MAXMIND]) {
     const dir = path.join(process.cwd(), 'geo');
 
@@ -144,6 +164,33 @@ export async function getLocation(ip: string = '', headers: Headers, skipHeaders
       city,
     };
   }
+}
+
+// On a Cloudflare Worker, `request.cf` locates the connecting client. Cloudflare
+// sets it, so unlike location headers it needs no trusted IP header; it says
+// nothing about an address sent in the payload (skipHeaders).
+function getCloudflareLocation() {
+  const cf = getCloudflareContext()?.cf;
+
+  if (!cf?.country) {
+    return undefined;
+  }
+
+  return {
+    country: cf.country,
+    region: getRegionCode(cf.country, cf.regionCode),
+    city: cf.city,
+  };
+}
+
+function getCloudflareNetwork() {
+  const cf = getCloudflareContext()?.cf;
+
+  if (!cf?.asn) {
+    return null;
+  }
+
+  return { asn: cf.asn, org: cf.asOrganization ?? null };
 }
 
 // Approximate coordinates of an IP from GeoLite2-City, for the visitor map:
@@ -181,9 +228,10 @@ export async function getCoordinates(ip: string = '') {
 
 // The autonomous system announcing the IP: its number and organisation name,
 // which identifies the ISP or the institution (e.g. "EXAMPLE-UNIVERSITY"). Hosting
-// headers carry no such field, so this always reads GeoLite2-ASN; without the
-// database file it returns null and the session simply has no network.
-export async function getNetwork(ip: string = '') {
+// headers carry no such field, so this reads GeoLite2-ASN; without the database
+// file the session has no network, unless `fromRequest` says the IP is the
+// connecting client's and a Cloudflare Worker's `request.cf` names its network.
+export async function getNetwork(ip: string = '', fromRequest = false) {
   const cleanIp = stripPort(ip);
 
   if (!cleanIp || !ipaddr.isValid(cleanIp) || (await isLocalIp(cleanIp))) {
@@ -201,7 +249,11 @@ export async function getNetwork(ip: string = '') {
     }
   }
 
-  const result = globalThis[MAXMIND_ASN]?.get(cleanIp);
+  if (!globalThis[MAXMIND_ASN]) {
+    return fromRequest ? getCloudflareNetwork() : null;
+  }
+
+  const result = globalThis[MAXMIND_ASN].get(cleanIp);
 
   if (!result) {
     return null;
@@ -223,7 +275,7 @@ export async function getClientInfo(request: Request, payload: Record<string, an
   const browser = payload?.browser ?? browserName(userAgent);
   const os = payload?.os ?? (detectOS(userAgent) as string);
   const device = payload?.device ?? getDevice(userAgent, payload?.screen);
-  const network = await getNetwork(ip);
+  const network = await getNetwork(ip, !payload?.ip);
 
   return {
     userAgent,

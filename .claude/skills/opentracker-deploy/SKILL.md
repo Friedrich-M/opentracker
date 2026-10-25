@@ -17,7 +17,7 @@ Read `AGENTS.md`, `docs/deployment.md` and `docs/repository-data.md` first. Depl
 
 ## Deploy and verify
 
-For Vercel, `sh scripts/deploy/vercel.sh` uploads `git archive HEAD` and the ignored local project link. It does not upload local environment files. For other hosts, follow their approved build/release procedure from `docs/deployment.md`. Do not assume a push automatically deploys.
+For Vercel, `sh scripts/deploy/vercel.sh` uploads `git archive HEAD` and the ignored local project link. It does not upload local environment files. For Cloudflare Workers, `sh scripts/deploy/cloudflare.sh` builds `git archive HEAD` in a temporary folder (DATABASE_URL in the shell; the build applies migrations) and runs `wrangler deploy` with the current Wrangler login; confirm that account first. For other hosts, follow their approved build/release procedure from `docs/deployment.md`. Do not assume a push automatically deploys.
 
 Check the instance's `/api/heartbeat`, `/script.js` and `/recorder.js`. A heartbeat does not test the database: verify a controlled visit reaches storage, or use a read-only count through the operator's approved database connection. Restrict inspection to what the task needs. Never print connection strings, tokens, visitor rows or replay content. Redact logs before reporting. Dashboard verification uses operator authentication; never ask for a password in chat. Use synthetic data for public screenshots.
 

@@ -2,6 +2,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { readReplicas } from '@prisma/extension-read-replicas';
 import debug from 'debug';
 import { PrismaClient } from '@/generated/prisma/client';
+import { getCloudflareContext, getHyperdriveUrl } from './cloudflare';
 import {
   DATA_TYPE,
   DEFAULT_PAGE_SIZE,
@@ -880,7 +881,7 @@ export function getSchema() {
 }
 
 function getClient() {
-  const url = process.env.DATABASE_URL;
+  const url = getHyperdriveUrl() || process.env.DATABASE_URL;
   const replicaUrl = process.env.DATABASE_REPLICA_URL;
   const logQuery = process.env.LOG_QUERY;
 
@@ -904,7 +905,6 @@ function getClient() {
 
   if (!replicaUrl) {
     log('Prisma initialized');
-    globalThis[PRISMA] ??= baseClient;
     return baseClient;
   }
 
@@ -927,12 +927,73 @@ function getClient() {
   );
 
   log('Prisma initialized (with replica)');
-  globalThis[PRISMA] ??= extended;
 
   return extended;
 }
 
-const client = (globalThis[PRISMA] || getClient()) as ReturnType<typeof getClient>;
+type Client = ReturnType<typeof getClient>;
+
+// A Cloudflare Worker cannot reuse a connection opened by another request, so
+// a Cloudflare build (OPENTRACKER_TARGET, inlined by next.config.ts) gives each
+// request its own client, keyed by its ExecutionContext; methods are bound to
+// that client. Other hosts share one client and its pool, as before.
+function getRequestScopedClient(): Client {
+  const clients = new WeakMap<object, Client>();
+  const bound = new WeakMap<Client, Map<PropertyKey, unknown>>();
+
+  const current = () => {
+    const ctx = getCloudflareContext()?.ctx;
+
+    if (!ctx) {
+      throw new Error('No Cloudflare request context for the database client.');
+    }
+
+    let requestClient = clients.get(ctx);
+
+    if (!requestClient) {
+      requestClient = getClient();
+      clients.set(ctx, requestClient);
+    }
+
+    return requestClient;
+  };
+
+  return new Proxy({} as Client, {
+    get(_, property) {
+      const target = current();
+      const value = Reflect.get(target, property);
+
+      if (typeof value !== 'function') {
+        return value;
+      }
+
+      let methods = bound.get(target);
+
+      if (!methods) {
+        methods = new Map();
+        bound.set(target, methods);
+      }
+
+      if (!methods.has(property)) {
+        methods.set(property, value.bind(target));
+      }
+
+      return methods.get(property);
+    },
+    has(_, property) {
+      return Reflect.has(current(), property);
+    },
+  });
+}
+
+function getSharedClient(): Client {
+  globalThis[PRISMA] ??= getClient();
+
+  return globalThis[PRISMA] as Client;
+}
+
+const client =
+  process.env.OPENTRACKER_TARGET === 'cloudflare' ? getRequestScopedClient() : getSharedClient();
 
 export default {
   client,

@@ -180,3 +180,76 @@ test.each([
   );
   expect(result.device).toBe(device);
 });
+
+// On a Cloudflare Worker the OpenNext worker exposes each request's `cf`
+// object through this global symbol.
+const CLOUDFLARE_CONTEXT = Symbol.for('__cloudflare-context__');
+
+function withCloudflareCf(cf: Record<string, unknown>, run: () => Promise<void>) {
+  globalThis[CLOUDFLARE_CONTEXT] = { env: {}, ctx: {}, cf };
+
+  return run().finally(() => {
+    delete globalThis[CLOUDFLARE_CONTEXT];
+  });
+}
+
+test('getLocation: a Worker reads the location from request.cf', async () => {
+  isLocalhost.default.mockResolvedValue(false as never);
+
+  await withCloudflareCf({ country: 'SG', regionCode: '01', city: 'Singapore' }, async () => {
+    await expect(getLocation('192.0.2.10', new Headers(), false)).resolves.toEqual({
+      country: 'SG',
+      region: 'SG-01',
+      city: 'Singapore',
+    });
+  });
+});
+
+test('getLocation: request.cf does not locate an address sent in the payload', async () => {
+  const previous = process.env.GEOLITE_DB_PATH;
+  process.env.GEOLITE_DB_PATH = '/nonexistent/GeoLite2-City.mmdb';
+  delete globalThis.maxmind;
+  isLocalhost.default.mockResolvedValue(false as never);
+
+  await withCloudflareCf({ country: 'SG' }, async () => {
+    await expect(getLocation('192.0.2.10', new Headers(), true)).resolves.toBeUndefined();
+  });
+
+  if (previous === undefined) {
+    delete process.env.GEOLITE_DB_PATH;
+  } else {
+    process.env.GEOLITE_DB_PATH = previous;
+  }
+});
+
+test('getNetwork: a Worker names the connecting client network from request.cf', async () => {
+  const previous = process.env.GEOLITE_ASN_DB_PATH;
+  process.env.GEOLITE_ASN_DB_PATH = '/nonexistent/GeoLite2-ASN.mmdb';
+  delete globalThis['maxmind-asn'];
+  isLocalhost.default.mockResolvedValue(false as never);
+
+  await withCloudflareCf({ asn: 64500, asOrganization: 'EXAMPLE-NET' }, async () => {
+    await expect(getNetwork('192.0.2.10', true)).resolves.toEqual({
+      asn: 64500,
+      org: 'EXAMPLE-NET',
+    });
+    // Another address (a payload override) is not the connection's.
+    await expect(getNetwork('192.0.2.10')).resolves.toBeNull();
+  });
+
+  delete globalThis['maxmind-asn'];
+  if (previous === undefined) {
+    delete process.env.GEOLITE_ASN_DB_PATH;
+  } else {
+    process.env.GEOLITE_ASN_DB_PATH = previous;
+  }
+});
+
+test('getLocation: a Worker treats reserved ranges as local without probing sockets', async () => {
+  await withCloudflareCf({ country: 'SG' }, async () => {
+    for (const ip of ['127.0.0.1', '10.1.2.3', '192.168.0.4', '::1', 'fd00::1']) {
+      await expect(getLocation(ip, new Headers(), false)).resolves.toBeNull();
+    }
+    expect(isLocalhost.default).not.toHaveBeenCalled();
+  });
+});
