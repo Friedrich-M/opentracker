@@ -8,6 +8,8 @@ Keep the vendored stylesheet and its MIT notice intact. Adapt the dashboard in `
 
 Use the existing theme and chart tokens. Frames, aligned cells and restrained typography form the layout; avoid introducing rounded cards, shadows or unrelated colors. Pixel wordmarks follow the existing glyph system. Both themes must remain readable, and the initial appearance follows the system unless the user has chosen one.
 
+The sign-in screen follows opencode.ai's home page rather than the docs: a framed column with the brand header and its GitHub link, the pitch with a tabbed command box (`git` clone of the source, the `script` tag) beside the form, and the form first on phones, where the header links stay visible.
+
 ## Interaction and language
 
 Use semantic controls, keyboard access, visible focus and meaningful labels. Check empty, loading and error states alongside populated data. Long website names, URLs and organization labels must not force horizontal overflow on a phone.

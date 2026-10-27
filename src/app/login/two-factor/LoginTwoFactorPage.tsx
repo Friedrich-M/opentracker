@@ -13,7 +13,6 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { OtpInput } from '@/components/common/OtpInput';
-import { PixelWordmark } from '@/components/common/PixelWordmark';
 import { useMessages, useTwoFactorVerifyMutation } from '@/components/hooks';
 import { setClientAuthToken } from '@/lib/client';
 import { consumeReturnUrl } from '@/lib/return-url';
@@ -87,11 +86,8 @@ export function LoginTwoFactorPage() {
     : null;
 
   return (
-    <Column justifyContent="center" alignItems="center" gap="6">
-      <h1 className="login-wordmark">
-        <PixelWordmark text="opentracker" mutedPrefix="open" />
-      </h1>
-      <Column gap="4" style={{ minWidth: 300 }}>
+    <Column gap="6">
+      <Column gap="4">
         <Heading size="xl">{t(labels.twoFactorLogin)}</Heading>
         <Text>{t(messages.twoFactorLoginDescription)}</Text>
 
@@ -103,7 +99,6 @@ export function LoginTwoFactorPage() {
           onSubmit={handleSubmit}
           error={error ?? undefined}
           defaultValues={{ backupCode: '' }}
-          style={{ minWidth: 300 }}
         >
           {!useBackup ? (
             <Column gap="2">

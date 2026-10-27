@@ -8,7 +8,6 @@ import {
   TextField,
 } from '@umami/react-zen';
 import { useRouter } from 'next/navigation';
-import { PixelWordmark } from '@/components/common/PixelWordmark';
 import { useMessages, useUpdateQuery } from '@/components/hooks';
 import { setClientAuthToken } from '@/lib/client';
 import { consumeReturnUrl } from '@/lib/return-url';
@@ -35,15 +34,13 @@ export function LoginForm() {
   };
 
   return (
-    <Column justifyContent="center" alignItems="center" gap="6">
-      <h1 className="login-wordmark">
-        <PixelWordmark text="opentracker" mutedPrefix="open" />
-      </h1>
+    <Column gap="6">
+      <h2 className="login-title">{t(labels.loginTitle)}</h2>
       <Form
         onSubmit={handleSubmit}
         error={getErrorMessage(error)}
         defaultValues={{ username: '', password: '' }}
-        style={{ minWidth: 300 }}
+        
       >
         <FormField
           label={t(labels.username)}

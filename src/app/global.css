@@ -181,7 +181,7 @@ body {
  * Text in opencode's logo style (PixelWordmark.tsx). Heights are whole-pixel
  * scales of the glyphs' 42-unit box (3, 4 or 9 px cells), except the header,
  * which takes opencode's own brand size: 21px for a website's name on phones,
- * 28px on wider screens (its letters about the favicon's height), 63px on login.
+ * 28px on wider screens (its letters about the favicon's height).
  */
 .pixel-strong {
   fill: var(--logo-strong);
@@ -200,8 +200,7 @@ body {
 }
 
 .brand svg,
-.page-wordmark,
-.login-wordmark svg {
+.page-wordmark {
   display: block;
   width: auto;
   shape-rendering: crispEdges;
@@ -222,12 +221,165 @@ body {
   }
 }
 
-.login-wordmark {
-  margin: 0;
+/*
+ * Sign-in screen (LoginPage.tsx), after opencode.ai's home page: one framed
+ * column with side rules, the header inside it, the pitch and its tabbed
+ * command box beside the form. On phones the form comes first.
+ */
+.login-page {
+  --login-frame: 72rem;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, var(--login-frame));
+  min-height: 100vh;
+  margin-inline: auto;
+  border-inline: 1px solid var(--border);
 }
 
-.login-wordmark svg {
-  height: 3.9375rem;
+.login-header {
+  position: static;
+  height: 5rem;
+  border-bottom-color: var(--border);
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.login-header .header-inner {
+  padding-inline: 2.5rem;
+}
+
+/* opencode.ai's home-page logo, half again the dashboard header's. */
+.login-header .brand svg {
+  height: calc(7.75rem / 39 * 7 * 1.5);
+}
+
+.login-frame {
+  display: grid;
+  flex: 1;
+  padding: 0;
+  grid-template-columns: minmax(0, 1fr) 24rem;
+}
+
+.login-intro {
+  padding: 6.5rem 2.5rem 4rem;
+}
+
+.login-intro h1 {
+  margin: 0 0 1rem;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.login-intro p {
+  max-width: 34rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  line-height: 2;
+}
+
+.login-command {
+  border: 1px solid var(--border);
+}
+
+.login-command .docs-plan-tabs-list {
+  margin: 0;
+  padding-inline: 0.5rem;
+}
+
+.login-command-body {
+  display: flex;
+  min-height: 4.5rem;
+  padding: 1rem 1.5rem;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface);
+}
+
+.login-command-body code {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+
+.login-copy {
+  flex: none;
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.login-copy:hover {
+  color: var(--foreground);
+}
+
+.login-copy:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.login-panel {
+  padding: 6.5rem 2.5rem 4rem;
+  border-left: 1px solid var(--border);
+}
+
+.login-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+@media (max-width: 48rem) {
+  .login-page {
+    border-inline: 0;
+  }
+
+  .login-header {
+    height: var(--header-height);
+  }
+
+  .login-header .brand svg {
+    height: calc(7.75rem / 39 * 7);
+  }
+
+  /* opencode folds its header links into a phone menu; here they stay, as
+     the only way to the source. */
+  .login-header nav {
+    display: flex;
+    margin-left: auto;
+    gap: 1rem;
+  }
+
+  .login-header .header-inner,
+  .login-intro,
+  .login-panel {
+    padding-inline: var(--gutter);
+  }
+
+  .login-frame {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .login-panel {
+    order: -1;
+    padding-block: 2.5rem;
+    border-left: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .login-intro {
+    padding-block: 2.5rem;
+  }
+
+  .login-intro h1 {
+    font-size: 1.75rem;
+  }
 }
 
 .header-account {
