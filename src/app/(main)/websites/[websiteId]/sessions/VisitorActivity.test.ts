@@ -149,6 +149,15 @@ test('referrers and entry pages read as names', () => {
   );
   expect(pageLabel('/gallery/', 'Gallery', 'Home page')).toBe('Gallery');
   expect(pageLabel('/x/', null, 'Home page')).toBe('/x/');
+  expect(pageLabel('/', 'Jane Doe', 'Home page', 'www.example.com', 'example.com')).toBe(
+    'Home page',
+  );
+  expect(
+    pageLabel('/', 'Gallery — Photos', 'Home page', 'gallery.example.com', 'example.com'),
+  ).toBe('Gallery');
+  expect(pageLabel('/', null, 'Home page', 'gallery.example.com', 'example.com')).toBe(
+    'gallery.example.com',
+  );
 });
 
 test('organisation names drop legal suffixes in the summary', () => {

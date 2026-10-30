@@ -3,7 +3,14 @@ import { ChevronDown, ExternalLink, Play, Search, UserRound } from 'lucide-react
 import { type ReactNode, useState } from 'react';
 import { SystemIcons } from '@/components/common/SystemIcons';
 import { TypeIcon } from '@/components/common/TypeIcon';
-import { useFormat, useLocale, useMessages, useNavigation, useTimezone } from '@/components/hooks';
+import {
+  useFormat,
+  useLocale,
+  useMessages,
+  useNavigation,
+  useTimezone,
+  useWebsite,
+} from '@/components/hooks';
 import { formatShortTime } from '@/lib/format';
 import { getDatePatterns } from '@/lib/lang';
 import type { WebsiteSession } from '@/lib/types';
@@ -126,19 +133,33 @@ export function referrerLabel(referrer: string | null | undefined) {
     .replace(/\/$/, '');
 }
 
+/** A host without `www.` or a port, for comparing a page's host with the website's domain. */
+function bareHost(host: string) {
+  return host
+    .toLowerCase()
+    .replace(/^www\./, '')
+    .replace(/:\d+$/, '');
+}
+
 /**
- * A page as people name it: `home` for the root, else the document title up
- * to its first separator ("Project — A Longer Description…" → "Project"), else
- * the path.
+ * A page as people name it: `home` for the website's root, else the document
+ * title up to its first separator ("Project — A Longer Description…" →
+ * "Project"), else the path. A root on another host (a subdomain the website
+ * also tracks) is not the home page: it takes its title, else its host.
  */
 export function pageLabel(
   path: string | null | undefined,
   title: string | null | undefined,
   home: string,
+  hostname?: string | null,
+  domain?: string | null,
 ) {
   if (!path) return null;
-  if (path === '/' || path === '/index.html') return home;
   const name = title?.split(/\s+[—–|·-]\s+/)[0]?.trim();
+  if (path === '/' || path === '/index.html') {
+    if (!hostname || !domain || bareHost(hostname) === bareHost(domain)) return home;
+    return name || bareHost(hostname);
+  }
   return name || path;
 }
 
@@ -155,6 +176,7 @@ export function VisitorActivity({ data }: { data: WebsiteSession[] }) {
   const { locale } = useLocale();
   const datePatterns = getDatePatterns(locale);
   const { router, updateParams } = useNavigation();
+  const website = useWebsite();
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   // Share links get rows without network fields (withoutNetwork), so the
   // organisation column would only ever show dashes: leave it out.
@@ -282,7 +304,13 @@ export function VisitorActivity({ data }: { data: WebsiteSession[] }) {
                   </span>
                   <span className={styles.landing}>
                     <span className={styles.ellipsis}>
-                      {pageLabel(pages[0], row.entryTitle, t(labels.homePage)) ?? '—'}
+                      {pageLabel(
+                        pages[0],
+                        row.entryTitle,
+                        t(labels.homePage),
+                        row.hostname,
+                        website?.domain,
+                      ) ?? '—'}
                     </span>
                     {collapseRepeats(pages).length > 1 && (
                       <span className={styles.more}>+{collapseRepeats(pages).length - 1}</span>

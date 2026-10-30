@@ -2,7 +2,13 @@ import { Button, Column, Icon, Row, Text } from '@umami/react-zen';
 import { ChevronDown, Download } from 'lucide-react';
 import { useState } from 'react';
 import { LoadingPanel } from '@/components/common/LoadingPanel';
-import { useLocale, useMessages, useTimezone, useVisitorPathsQuery } from '@/components/hooks';
+import {
+  useLocale,
+  useMessages,
+  useTimezone,
+  useVisitorPathsQuery,
+  useWebsite,
+} from '@/components/hooks';
 import { EVENT_TYPE } from '@/lib/constants';
 import { formatShortTime } from '@/lib/format';
 import { getDatePatterns } from '@/lib/lang';
@@ -138,6 +144,7 @@ export function VisitorPaths({
   const { locale } = useLocale();
   const datePatterns = getDatePatterns(locale);
   const { data, isLoading, error } = useVisitorPathsQuery(websiteId, sessionId);
+  const website = useWebsite();
   const events: PathEvent[] = data ?? [];
   const visits = groupVisits(events);
   const websites = new Set(events.map(e => e.websiteId));
@@ -273,7 +280,14 @@ export function VisitorPaths({
                                   target="_blank"
                                   rel="noreferrer noopener"
                                 >
-                                  {pageLabel(event.urlPath, event.pageTitle, t(labels.homePage))}
+                                  {pageLabel(
+                                    event.urlPath,
+                                    event.pageTitle,
+                                    t(labels.homePage),
+                                    event.hostname,
+                                    // Only this website's domain is at hand.
+                                    event.websiteId === website?.id ? website.domain : null,
+                                  )}
                                 </a>
                                 <span className={styles.muted}>{event.urlPath}</span>
                               </span>
