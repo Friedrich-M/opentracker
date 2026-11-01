@@ -96,7 +96,7 @@
     "rrweb-player": "2.1.7",
     "serialize-error": "^13.0.1",
     "thenby": "^1.4.1",
-    "ua-parser-js": "^1.0.41",
+    "ua-parser-js": "^2.0.10",
     "uuid": "^14.0.2",
     "zod": "^4.6.7",
     "zustand": "^5.0.16"
