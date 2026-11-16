@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # UAParser 2.x is AGPL-licensed; device parsing stays on the MIT 1.x line (AGENTS.md).
+      - dependency-name: ua-parser-js
+        update-types: ['version-update:semver-major']
     groups:
       development-tools:
         dependency-type: development

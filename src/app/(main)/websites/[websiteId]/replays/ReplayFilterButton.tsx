@@ -36,11 +36,11 @@ function ReplayFilterForm({ minDuration, onClose }: { minDuration: string; onClo
   };
 
   const handleApply = () => {
-    const nextValue = value ? Number(value) : 0;
+    const nextValue = Number(value) || 0;
 
     router.push(
       updateParams({
-        minDuration: nextValue > 0 ? nextValue : 0,
+        minDuration: Math.max(nextValue, 0),
         page: 1,
       }),
     );

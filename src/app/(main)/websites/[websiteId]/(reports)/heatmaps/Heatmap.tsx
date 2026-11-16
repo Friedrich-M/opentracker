@@ -658,7 +658,7 @@ function ClickHeatmapView({
   }, [points, viewport]);
 
   const maxCount = useMemo(
-    () => visible.reduce((max, point) => (point.count > max ? point.count : max), 1),
+    () => visible.reduce((max, point) => Math.max(max, point.count), 1),
     [visible],
   );
 
